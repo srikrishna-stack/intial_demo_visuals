@@ -1,12 +1,9 @@
-
 import './App.css'
-import BuffaloFamilyTree from './BuffaloFamilyTree'
+import BuffaloFamilyTree from './components/BuffaloFamilyTree'
 
 function App() {
-  
-
   return (
-      <div className="App">
+    <div className="App">
       <BuffaloFamilyTree />
     </div>
   )
