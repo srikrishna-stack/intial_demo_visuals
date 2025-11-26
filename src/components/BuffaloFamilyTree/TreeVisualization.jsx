@@ -11,7 +11,8 @@ const TreeVisualization = ({
   handleMouseMove,
   handleMouseUp,
   containerRef,
-  treeContainerRef
+  treeContainerRef,
+  onShowCostEstimation
 }) => {
   if (!treeData) {
     return (
@@ -43,7 +44,7 @@ const TreeVisualization = ({
             </div>
           </div>
           <button
-            onClick={() => window.location.reload()} // This will be handled by parent
+            onClick={() => window.location.reload()}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 py-6 rounded-2xl font-bold text-xl hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-2xl inline-flex items-center gap-3"
           >
             Start Your First Simulation
@@ -52,6 +53,9 @@ const TreeVisualization = ({
       </div>
     );
   }
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", 
+                     "July", "August", "September", "October", "November", "December"];
 
   return (
     <div className="flex-1 relative overflow-hidden" ref={containerRef}>
@@ -74,10 +78,25 @@ const TreeVisualization = ({
           <div className="text-xl font-bold text-green-600">{treeData.years}</div>
           <div className="text-sm text-gray-600">Simulation Years</div>
         </div>
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-gray-200 min-w-[140px]">
+          <div className="text-xl font-bold text-purple-600">{monthNames[treeData.startMonth]}</div>
+          <div className="text-sm text-gray-600">Starting Month</div>
+        </div>
         <div className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl p-5 shadow-xl text-white min-w-[160px]">
           <div className="text-2xl font-bold">{treeData.totalBuffaloes}</div>
           <div className="text-sm opacity-90">Total Buffaloes</div>
         </div>
+        
+        {/* Revenue Report Button */}
+        {treeData.revenueData && (
+          <button
+            onClick={onShowCostEstimation}
+            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl p-5 shadow-xl min-w-[160px] hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105"
+          >
+            <div className="text-2xl font-bold">₹{Math.round(treeData.revenueData.totalRevenue / 100000)}L+</div>
+            <div className="text-sm opacity-90">View Revenue Report</div>
+          </button>
+        )}
       </div>
 
       {/* Tree Visualization Container */}
@@ -110,6 +129,9 @@ const TreeVisualization = ({
                     <h2 className="text-xl font-bold text-gray-800 mb-2">
                       Unit {founder.unit} - Founder B{founder.id}
                     </h2>
+                    <div className="text-sm text-gray-600 mb-2">
+                      Started: {monthNames[treeData.startMonth]} {treeData.startYear}
+                    </div>
                     <div className="w-20 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 mx-auto rounded-full"></div>
                   </div>
 

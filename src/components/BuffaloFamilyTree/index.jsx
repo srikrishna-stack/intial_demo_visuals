@@ -8,6 +8,7 @@ export default function BuffaloFamilyTree() {
   const [units, setUnits] = useState(1);
   const [years, setYears] = useState(10);
   const [startYear, setStartYear] = useState(2026);
+  const [startMonth, setStartMonth] = useState(0); // 0 = January
   const [treeData, setTreeData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -19,80 +20,113 @@ export default function BuffaloFamilyTree() {
   const containerRef = useRef(null);
   const treeContainerRef = useRef(null);
 
-  // Milk production configuration
-  const milkConfig = {
-    pricePerLiter: 100,
-    productionSchedule: {
-      highProduction: { months: 5, litersPerDay: 10 },
-      mediumProduction: { months: 3, litersPerDay: 5 },
-      restPeriod: { months: 4, litersPerDay: 0 }
+  // NEW: Staggered revenue configuration
+  const revenueConfig = {
+    landingPeriod: 2, // months for each buffalo
+    highRevenuePhase: { months: 5, revenue: 9000 }, // 5 months of high revenue
+    mediumRevenuePhase: { months: 3, revenue: 6000 }, // 3 months of medium revenue
+    restPeriod: { months: 4, revenue: 0 } // 4 months rest
+  };
+
+  // NEW: Calculate monthly revenue for EACH buffalo based on its individual cycle
+  const calculateMonthlyRevenueForBuffalo = (buffaloId, acquisitionMonth, currentYear, currentMonth) => {
+    // Each buffalo starts its cycle from its acquisition month
+    const monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
+    
+    // First 2 months after acquisition are landing/rest
+    if (monthsSinceAcquisition < revenueConfig.landingPeriod) {
+      return 0;
+    }
+    
+    const productionMonths = monthsSinceAcquisition - revenueConfig.landingPeriod;
+    const cyclePosition = productionMonths % 12; // 12-month cycle
+    
+    if (cyclePosition < revenueConfig.highRevenuePhase.months) {
+      return revenueConfig.highRevenuePhase.revenue;
+    } else if (cyclePosition < revenueConfig.highRevenuePhase.months + revenueConfig.mediumRevenuePhase.months) {
+      return revenueConfig.mediumRevenuePhase.revenue;
+    } else {
+      return revenueConfig.restPeriod.revenue;
     }
   };
 
-  // Calculate milk production for a single buffalo in a year
-  const calculateYearlyMilkProduction = (buffalo, year) => {
-    if (buffalo.age < 3) return 0;
+  // UPDATED: Calculate annual revenue for ALL mature buffaloes with individual cycles
+  const calculateAnnualRevenueForHerd = (herd, startYear, startMonth, currentYear) => {
+    let annualRevenue = 0;
     
-    const birthYear = buffalo.birthYear;
-    const buffaloAgeInYear = year - birthYear;
-    
-    if (buffaloAgeInYear < 3) return 0;
-    
-    const gaveBirthThisYear = buffaloAgeInYear >= 3;
-    
-    if (!gaveBirthThisYear) return 0;
-    
-    const { highProduction, mediumProduction } = milkConfig.productionSchedule;
-    
-    const highProductionLiters = highProduction.months * 30 * highProduction.litersPerDay;
-    const mediumProductionLiters = mediumProduction.months * 30 * mediumProduction.litersPerDay;
-    
-    return highProductionLiters + mediumProductionLiters;
+    // Count mature buffaloes (age >= 3) in current year
+    const matureBuffaloes = herd.filter(buffalo => {
+      const ageInCurrentYear = currentYear - buffalo.birthYear;
+      return ageInCurrentYear >= 3;
+    });
+
+    // Calculate revenue for each mature buffalo with its individual cycle
+    matureBuffaloes.forEach((buffalo, index) => {
+      // Stagger acquisition: first buffalo in Jan (0), second in July (6)
+      const acquisitionMonth = buffalo.acquisitionMonth;
+      
+      for (let month = 0; month < 12; month++) {
+        annualRevenue += calculateMonthlyRevenueForBuffalo(
+          buffalo.id, 
+          acquisitionMonth, 
+          currentYear, 
+          month
+        );
+      }
+    });
+
+    return {
+      annualRevenue,
+      matureBuffaloes: matureBuffaloes.length,
+      totalBuffaloes: herd.filter(buffalo => buffalo.birthYear <= currentYear).length
+    };
   };
 
-  // Calculate total milk production and revenue
-  const calculateMilkProduction = (herd, startYear, totalYears) => {
+  // UPDATED: Calculate total revenue data based on ACTUAL herd growth with staggered cycles
+  const calculateRevenueData = (herd, startYear, startMonth, totalYears) => {
     const yearlyData = [];
     let totalRevenue = 0;
-    let totalLiters = 0;
+    let totalMatureBuffaloYears = 0;
 
-    for (let year = startYear; year < startYear + totalYears; year++) {
-      let yearLiters = 0;
-      let producingBuffaloes = 0;
-      let totalBuffaloesInYear = 0;
+    const monthNames = ["January", "February", "March", "April", "May", "June", 
+                       "July", "August", "September", "October", "November", "December"];
 
-      herd.forEach(buffalo => {
-        const milkProduction = calculateYearlyMilkProduction(buffalo, year);
-        yearLiters += milkProduction;
-        if (milkProduction > 0) producingBuffaloes++;
-        if (buffalo.birthYear <= year) {
-          totalBuffaloesInYear++;
-        }
-      });
+    for (let yearOffset = 0; yearOffset < totalYears; yearOffset++) {
+      const currentYear = startYear + yearOffset;
+      
+      const { annualRevenue, matureBuffaloes, totalBuffaloes } = 
+        calculateAnnualRevenueForHerd(herd, startYear, startMonth, currentYear);
 
-      const yearRevenue = yearLiters * milkConfig.pricePerLiter;
-      totalRevenue += yearRevenue;
-      totalLiters += yearLiters;
+      totalRevenue += annualRevenue;
+      totalMatureBuffaloYears += matureBuffaloes;
+
+      const monthlyRevenuePerBuffalo = matureBuffaloes > 0 ? annualRevenue / (matureBuffaloes * 12) : 0;
 
       yearlyData.push({
-        year,
-        producingBuffaloes,
-        nonProducingBuffaloes: totalBuffaloesInYear - producingBuffaloes,
-        totalBuffaloes: totalBuffaloesInYear,
-        liters: yearLiters,
-        revenue: yearRevenue
+        year: currentYear,
+        activeUnits: Math.ceil(totalBuffaloes / 2),
+        monthlyRevenue: monthlyRevenuePerBuffalo,
+        revenue: annualRevenue,
+        totalBuffaloes: totalBuffaloes,
+        producingBuffaloes: matureBuffaloes,
+        nonProducingBuffaloes: totalBuffaloes - matureBuffaloes,
+        startMonth: monthNames[startMonth],
+        startYear: startYear,
+        matureBuffaloes: matureBuffaloes
       });
     }
 
     return {
       yearlyData,
       totalRevenue,
-      totalLiters,
-      averageAnnualRevenue: totalRevenue / totalYears
+      totalUnits: totalMatureBuffaloYears / totalYears,
+      averageAnnualRevenue: totalRevenue / totalYears,
+      revenueConfig,
+      totalMatureBuffaloYears
     };
   };
 
-  // Simulation logic with milk production
+  // UPDATED: Simulation logic with staggered acquisition months
   const runSimulation = () => {
     setLoading(true);
     setTimeout(() => {
@@ -100,7 +134,9 @@ export default function BuffaloFamilyTree() {
       const herd = [];
       let nextId = 1;
 
+      // Create initial buffaloes (2 per unit) with staggered acquisition
       for (let u = 0; u < units; u++) {
+        // First buffalo - acquired in January
         herd.push({
           id: nextId++,
           age: 3,
@@ -108,9 +144,11 @@ export default function BuffaloFamilyTree() {
           parentId: null,
           generation: 0,
           birthYear: startYear - 3,
+          acquisitionMonth: startMonth, // January (0)
           unit: u + 1,
         });
 
+        // Second buffalo - acquired in July (6 months later)
         herd.push({
           id: nextId++,
           age: 3,
@@ -118,42 +156,48 @@ export default function BuffaloFamilyTree() {
           parentId: null,
           generation: 0,
           birthYear: startYear - 3,
+          acquisitionMonth: (startMonth + 6) % 12, // July (6)
           unit: u + 1,
         });
       }
 
+      // Simulate years
       for (let year = 1; year <= totalYears; year++) {
         const currentYear = startYear + (year - 1);
-        const moms = herd.filter((b) => b.age >= 3);
+        const matureBuffaloes = herd.filter((b) => b.age >= 3);
 
-        moms.forEach((mom) => {
+        // Each mature buffalo gives birth to one offspring per year
+        matureBuffaloes.forEach((parent) => {
           herd.push({
             id: nextId++,
             age: 0,
             mature: false,
-            parentId: mom.id,
+            parentId: parent.id,
             birthYear: currentYear,
-            generation: mom.generation + 1,
-            unit: mom.unit,
+            acquisitionMonth: parent.acquisitionMonth, // Inherit parent's cycle
+            generation: parent.generation + 1,
+            unit: parent.unit,
           });
         });
 
+        // Age all buffaloes
         herd.forEach((b) => {
           b.age++;
           if (b.age >= 3) b.mature = true;
         });
       }
 
-      // Calculate milk production
-      const milkProductionData = calculateMilkProduction(herd, startYear, totalYears);
+      // Calculate revenue data based on ACTUAL herd growth with staggered cycles
+      const revenueData = calculateRevenueData(herd, startYear, startMonth, totalYears);
 
       setTreeData({
         units,
         years,
         startYear,
+        startMonth,
         totalBuffaloes: herd.length,
         buffaloes: herd,
-        milkData: milkProductionData
+        revenueData: revenueData
       });
 
       setLoading(false);
@@ -168,6 +212,7 @@ export default function BuffaloFamilyTree() {
     setUnits(1);
     setYears(10);
     setStartYear(2026);
+    setStartMonth(0);
     setZoom(1);
     setPosition({ x: 0, y: 0 });
     setShowCostEstimation(false);
@@ -215,8 +260,8 @@ export default function BuffaloFamilyTree() {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="animate-spin rounded-full h-20 w-20 border-b-2 border-blue-600 mb-6"></div>
-        <div className="text-2xl text-gray-700 font-semibold">Simulating Buffalo Herd...</div>
-        <div className="text-base text-gray-500 mt-3">This may take a moment</div>
+        <div className="text-2xl text-gray-700 font-semibold">Growing Buffalo Herd...</div>
+        <div className="text-base text-gray-500 mt-3">Simulating {units} unit{units > 1 ? 's' : ''} over {years} years</div>
       </div>
     );
   }
@@ -241,6 +286,8 @@ export default function BuffaloFamilyTree() {
         setYears={setYears}
         startYear={startYear}
         setStartYear={setStartYear}
+        startMonth={startMonth}
+        setStartMonth={setStartMonth}
         runSimulation={runSimulation}
         treeData={treeData}
         resetSimulation={resetSimulation}
@@ -261,6 +308,7 @@ export default function BuffaloFamilyTree() {
         handleMouseUp={handleMouseUp}
         containerRef={containerRef}
         treeContainerRef={treeContainerRef}
+        onShowCostEstimation={() => setShowCostEstimation(true)}
       />
     </div>
   );
