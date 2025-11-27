@@ -311,264 +311,440 @@ const CostEstimationTable = ({
   };
 
   // NEW: Detailed Monthly Revenue Breakdown Component - Only Showing Income-Producing Buffaloes
-const DetailedMonthlyRevenueBreakdown = () => {
-  const [selectedYear, setSelectedYear] = useState(treeData.startYear);
-  const [selectedUnit, setSelectedUnit] = useState(1);
+  const DetailedMonthlyRevenueBreakdown = () => {
+    const [selectedYear, setSelectedYear] = useState(treeData.startYear);
+    const [selectedUnit, setSelectedUnit] = useState(1);
 
-  // Get buffaloes for selected unit and filter only income-producing ones for the selected year
-  const unitBuffaloes = Object.values(buffaloDetails)
-    .filter(buffalo => buffalo.unit === selectedUnit)
-    .filter(buffalo => {
-      // Check if buffalo is income-producing in the selected year
-      // Buffalo must be at least 3 years old and have revenue in at least one month
-      if (selectedYear < buffalo.birthYear + 3) {
-        return false; // Buffalo is too young
-      }
+    // Get buffaloes for selected unit and filter only income-producing ones for the selected year
+    const unitBuffaloes = Object.values(buffaloDetails)
+      .filter(buffalo => buffalo.unit === selectedUnit)
+      .filter(buffalo => {
+        // Check if buffalo is income-producing in the selected year
+        // Buffalo must be at least 3 years old and have revenue in at least one month
+        if (selectedYear < buffalo.birthYear + 3) {
+          return false; // Buffalo is too young
+        }
+        
+        // Check if buffalo has any revenue in the selected year
+        const hasRevenue = monthNames.some((_, monthIndex) => {
+          return (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0) > 0;
+        });
+        
+        return hasRevenue;
+      });
+
+    // Calculate CPF cost for milk-producing buffaloes
+    const calculateCPFCost = () => {
+      // Count milk-producing buffaloes (age >= 3 and generating revenue)
+      const milkProducingBuffaloes = unitBuffaloes.length;
       
-      // Check if buffalo has any revenue in the selected year
-      const hasRevenue = monthNames.some((_, monthIndex) => {
-        return (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0) > 0;
+      // CPF cost: ₹13,000 per milk-producing buffalo per year
+      const annualCPFCost = milkProducingBuffaloes * 13000;
+      const monthlyCPFCost = annualCPFCost / 12;
+      
+      return {
+        milkProducingBuffaloes,
+        annualCPFCost,
+        monthlyCPFCost: Math.round(monthlyCPFCost)
+      };
+    };
+
+    const cpfCost = calculateCPFCost();
+
+    // Download Excel function
+    const downloadExcel = () => {
+      // Create CSV content
+      let csvContent = "Monthly Revenue Breakdown - Unit " + selectedUnit + " - " + selectedYear + "\n\n";
+      
+      // Headers
+      csvContent += "Month,";
+      unitBuffaloes.forEach(buffalo => {
+        csvContent += buffalo.id + ",";
+      });
+      csvContent += "Unit Total,CPF Cost,Net Revenue\n";
+      
+      // Monthly data
+      monthNames.forEach((month, monthIndex) => {
+        const unitTotal = unitBuffaloes.reduce((sum, buffalo) => {
+          return sum + (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0);
+        }, 0);
+        
+        const netRevenue = unitTotal - cpfCost.monthlyCPFCost;
+        
+        csvContent += month + ",";
+        unitBuffaloes.forEach(buffalo => {
+          const revenue = monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0;
+          csvContent += revenue + ",";
+        });
+        csvContent += unitTotal + "," + cpfCost.monthlyCPFCost + "," + netRevenue + "\n";
       });
       
-      return hasRevenue;
-    });
+      // Yearly totals
+      const yearlyUnitTotal = unitBuffaloes.reduce((sum, buffalo) => {
+        return sum + monthNames.reduce((monthSum, _, monthIndex) => {
+          return monthSum + (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0);
+        }, 0);
+      }, 0);
+      
+      const yearlyNetRevenue = yearlyUnitTotal - cpfCost.annualCPFCost;
+      
+      csvContent += "\nYearly Total,";
+      unitBuffaloes.forEach(buffalo => {
+        const yearlyTotal = monthNames.reduce((sum, _, monthIndex) => {
+          return sum + (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0);
+        }, 0);
+        csvContent += yearlyTotal + ",";
+      });
+      csvContent += yearlyUnitTotal + "," + cpfCost.annualCPFCost + "," + yearlyNetRevenue + "\n";
+      
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Unit-${selectedUnit}-Revenue-${selectedYear}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
 
-  return (
-    <div className="bg-gradient-to-br from-blue-50 to-cyan-100 rounded-3xl p-10 shadow-2xl border border-blue-200 mb-16">
-      <h2 className="text-4xl font-bold text-blue-800 mb-8 text-center flex items-center justify-center gap-4">
-        <span className="text-5xl">📊</span>
-        Monthly Revenue - Income Producing Buffaloes Only
-      </h2>
+    return (
+      <div className="bg-gradient-to-br from-blue-50 to-cyan-100 rounded-3xl p-10 shadow-2xl border border-blue-200 mb-16">
+        <h2 className="text-4xl font-bold text-blue-800 mb-8 text-center flex items-center justify-center gap-4">
+          <span className="text-5xl">📊</span>
+          Monthly Revenue - Income Producing Buffaloes Only
+        </h2>
 
-      {/* Year and Unit Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white rounded-2xl p-6 border border-blue-200">
-          <label className="block text-lg font-semibold text-blue-700 mb-3">
-            Select Year:
-          </label>
-          <select 
-            value={selectedYear} 
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="w-full p-3 border border-blue-300 rounded-xl text-lg"
-          >
-            {Array.from({ length: treeData.years + 1 }, (_, i) => (
-              <option key={i} value={treeData.startYear + i}>
-                {treeData.startYear + i}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Year and Unit Selection with Download Button */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-2xl p-6 border border-blue-200">
+            <label className="block text-lg font-semibold text-blue-700 mb-3">
+              Select Year:
+            </label>
+            <select 
+              value={selectedYear} 
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="w-full p-3 border border-blue-300 rounded-xl text-lg"
+            >
+              {Array.from({ length: treeData.years + 1 }, (_, i) => (
+                <option key={i} value={treeData.startYear + i}>
+                  {treeData.startYear + i}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="bg-white rounded-2xl p-6 border border-blue-200">
-          <label className="block text-lg font-semibold text-blue-700 mb-3">
-            Select Unit:
-          </label>
-          <select 
-            value={selectedUnit} 
-            onChange={(e) => setSelectedUnit(parseInt(e.target.value))}
-            className="w-full p-3 border border-blue-300 rounded-xl text-lg"
-          >
-            {Array.from({ length: treeData.units }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                Unit {i + 1}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+          <div className="bg-white rounded-2xl p-6 border border-blue-200">
+            <label className="block text-lg font-semibold text-blue-700 mb-3">
+              Select Unit:
+            </label>
+            <select 
+              value={selectedUnit} 
+              onChange={(e) => setSelectedUnit(parseInt(e.target.value))}
+              className="w-full p-3 border border-blue-300 rounded-xl text-lg"
+            >
+              {Array.from({ length: treeData.units }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  Unit {i + 1}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      {/* Income Producing Buffaloes Summary */}
-      <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 text-white text-center mb-8">
-        <div className="text-2xl font-bold mb-2">
-          {unitBuffaloes.length} Income Producing Buffaloes in {selectedYear}
-        </div>
-        <div className="text-lg opacity-90">
-          Unit {selectedUnit} | Showing only buffaloes generating revenue
-        </div>
-      </div>
-
-      {/* Buffalo Family Tree for Selected Unit - Only Showing Income Producing */}
-      {unitBuffaloes.length > 0 && (
-        <div className="bg-white rounded-2xl p-8 border border-purple-200 mb-8">
-          <h3 className="text-2xl font-bold text-purple-800 mb-6 text-center">
-            🐃 Income Producing Buffaloes - Unit {selectedUnit} ({selectedYear})
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {unitBuffaloes.filter(b => b.generation === 0).map((parent, index) => (
-              <div key={parent.id} className="bg-purple-50 rounded-xl p-6 border border-purple-300">
-                <div className="text-xl font-bold text-purple-700 mb-4 flex items-center gap-2">
-                  {parent.id} 
-                  <span className="text-sm bg-green-500 text-white px-2 py-1 rounded-full">Parent</span>
-                </div>
-                <div className="text-sm text-purple-600 mb-2">
-                  Acquisition: {monthNames[parent.acquisitionMonth]}
-                </div>
-                <div className="text-sm text-green-600 font-semibold">
-                  Active in {selectedYear}
-                </div>
-                
-                {/* Children - Only show income producing ones */}
-                {parent.children.filter(childId => {
-                  const child = buffaloDetails[childId];
-                  return child && unitBuffaloes.some(b => b.id === child.id);
-                }).length > 0 && (
-                  <div className="mt-4">
-                    <div className="font-semibold text-purple-600 mb-2">Children:</div>
-                    {parent.children.filter(childId => {
-                      const child = buffaloDetails[childId];
-                      return child && unitBuffaloes.some(b => b.id === child.id);
-                    }).map(childId => {
-                      const child = buffaloDetails[childId];
-                      return child ? (
-                        <div key={child.id} className="ml-4 bg-blue-50 rounded-lg p-3 mb-2 border border-blue-200">
-                          <div className="font-semibold text-blue-700 flex items-center gap-2">
-                            {child.id}
-                            <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">Child</span>
-                          </div>
-                          <div className="text-xs text-blue-600">Born: {child.birthYear}</div>
-                          <div className="text-xs text-green-600 font-medium">Active</div>
-                          
-                          {/* Grandchildren - Only show income producing ones */}
-                          {child.grandchildren.filter(grandchildId => {
-                            const grandchild = buffaloDetails[grandchildId];
-                            return grandchild && unitBuffaloes.some(b => b.id === grandchild.id);
-                          }).length > 0 && (
-                            <div className="mt-2">
-                              <div className="font-medium text-blue-600 text-xs mb-1">Grandchildren:</div>
-                              {child.grandchildren.filter(grandchildId => {
-                                const grandchild = buffaloDetails[grandchildId];
-                                return grandchild && unitBuffaloes.some(b => b.id === grandchild.id);
-                              }).map(grandchildId => {
-                                const grandchild = buffaloDetails[grandchildId];
-                                return grandchild ? (
-                                  <div key={grandchild.id} className="ml-4 bg-green-50 rounded p-2 mb-1 border border-green-200">
-                                    <div className="font-medium text-green-700 text-sm flex items-center gap-2">
-                                      {grandchild.id}
-                                      <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">Grandchild</span>
-                                    </div>
-                                    <div className="text-xs text-green-600">Born: {grandchild.birthYear}</div>
-                                    <div className="text-xs text-green-600 font-medium">Active</div>
-                                  </div>
-                                ) : null;
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className="bg-white rounded-2xl p-6 border border-green-200 flex items-center justify-center">
+            <button
+              onClick={downloadExcel}
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-8 rounded-2xl shadow-2xl transform hover:scale-105 transition-transform duration-300 flex items-center justify-center gap-3 w-full"
+            >
+              <span className="text-2xl">📥</span>
+              <span className="text-xl">Download Excel</span>
+            </button>
           </div>
         </div>
-      )}
 
-      {/* Monthly Revenue Table - Only for Income Producing Buffaloes */}
-      {unitBuffaloes.length > 0 ? (
-        <div className="bg-white rounded-2xl p-8 border border-gray-200">
-          <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-            Monthly Revenue Breakdown - {selectedYear} (Unit {selectedUnit})
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gradient-to-r from-gray-50 to-blue-50">
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Month</th>
-                  {unitBuffaloes.map(buffalo => (
-                    <th key={buffalo.id} className="px-4 py-4 text-center font-bold text-gray-700 border-b">
-                      <div>{buffalo.id}</div>
-                      <div className="text-xs font-normal text-gray-500">
-                        {buffalo.generation === 0 ? 'Parent' : 
-                         buffalo.generation === 1 ? 'Child' : 'Grandchild'}
-                      </div>
-                    </th>
-                  ))}
-                  <th className="px-6 py-4 text-center font-bold text-gray-700 border-b">Unit Total</th>
-      
-                </tr>
-              </thead>
-              <tbody>
-                {monthNames.map((month, monthIndex) => {
-                  const unitTotal = unitBuffaloes.reduce((sum, buffalo) => {
-                    return sum + (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0);
-                  }, 0);
+        {/* CPF Cost Summary */}
+        <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-6 text-white text-center mb-8">
+          <div className="text-2xl font-bold mb-2">
+            CPF (Cattle Protection Fund) - ₹13,000 per Milk-Producing Buffalo
+          </div>
+          <div className="text-lg opacity-90">
+            {cpfCost.milkProducingBuffaloes} milk-producing buffaloes × ₹13,000 = {formatCurrency(cpfCost.annualCPFCost)} annually
+          </div>
+          <div className="text-sm opacity-80 mt-2">
+            Monthly CPF Cost: {formatCurrency(cpfCost.monthlyCPFCost)} | Net Revenue = Total Revenue - CPF Cost
+          </div>
+        </div>
+
+        {/* Income Producing Buffaloes Summary */}
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 text-white text-center mb-8">
+          <div className="text-2xl font-bold mb-2">
+            {unitBuffaloes.length} Income Producing Buffaloes in {selectedYear}
+          </div>
+          <div className="text-lg opacity-90">
+            Unit {selectedUnit} | Showing only buffaloes generating revenue
+          </div>
+        </div>
+
+        {/* Buffalo Family Tree for Selected Unit - Only Showing Income Producing */}
+        {unitBuffaloes.length > 0 && (
+          <div className="bg-white rounded-2xl p-8 border border-purple-200 mb-8">
+            <h3 className="text-2xl font-bold text-purple-800 mb-6 text-center">
+              🐃 Income Producing Buffaloes - Unit {selectedUnit} ({selectedYear})
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {unitBuffaloes.filter(b => b.generation === 0).map((parent, index) => (
+                <div key={parent.id} className="bg-purple-50 rounded-xl p-6 border border-purple-300">
+                  <div className="text-xl font-bold text-purple-700 mb-4 flex items-center gap-2">
+                    {parent.id} 
+                    <span className="text-sm bg-green-500 text-white px-2 py-1 rounded-full">Parent</span>
+                  </div>
+                  <div className="text-sm text-purple-600 mb-2">
+                    Acquisition: {monthNames[parent.acquisitionMonth]}
+                  </div>
+                  <div className="text-sm text-green-600 font-semibold">
+                    Active in {selectedYear}
+                  </div>
                   
-                 
-
-                  return (
-                    <tr key={monthIndex} className="hover:bg-blue-50 transition-colors">
-                      <td className="px-6 py-4 border-b font-semibold text-gray-900">
-                        {month}
-                      </td>
-                      {unitBuffaloes.map(buffalo => {
-                        const revenue = monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0;
-                        return (
-                          <td key={buffalo.id} className="px-4 py-4 border-b text-center">
-                            <div className={`font-semibold ${
-                              revenue === 9000 ? 'text-green-600' : 
-                              revenue === 6000 ? 'text-blue-600' : 
-                              'text-gray-400'
-                            }`}>
-                              {formatCurrency(revenue)}
+                  {/* Children - Only show income producing ones */}
+                  {parent.children.filter(childId => {
+                    const child = buffaloDetails[childId];
+                    return child && unitBuffaloes.some(b => b.id === child.id);
+                  }).length > 0 && (
+                    <div className="mt-4">
+                      <div className="font-semibold text-purple-600 mb-2">Children:</div>
+                      {parent.children.filter(childId => {
+                        const child = buffaloDetails[childId];
+                        return child && unitBuffaloes.some(b => b.id === child.id);
+                      }).map(childId => {
+                        const child = buffaloDetails[childId];
+                        return child ? (
+                          <div key={child.id} className="ml-4 bg-blue-50 rounded-lg p-3 mb-2 border border-blue-200">
+                            <div className="font-semibold text-blue-700 flex items-center gap-2">
+                              {child.id}
+                              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">Child</span>
                             </div>
-                            <div className="text-xs text-gray-500">
-                              {revenue === 9000 ? 'High' : revenue === 6000 ? 'Medium' : 'Rest'}
-                            </div>
-                          </td>
-                        );
+                            <div className="text-xs text-blue-600">Born: {child.birthYear}</div>
+                            <div className="text-xs text-green-600 font-medium">Active</div>
+                            
+                            {/* Grandchildren - Only show income producing ones */}
+                            {child.grandchildren.filter(grandchildId => {
+                              const grandchild = buffaloDetails[grandchildId];
+                              return grandchild && unitBuffaloes.some(b => b.id === grandchild.id);
+                            }).length > 0 && (
+                              <div className="mt-2">
+                                <div className="font-medium text-blue-600 text-xs mb-1">Grandchildren:</div>
+                                {child.grandchildren.filter(grandchildId => {
+                                  const grandchild = buffaloDetails[grandchildId];
+                                  return grandchild && unitBuffaloes.some(b => b.id === grandchild.id);
+                                }).map(grandchildId => {
+                                  const grandchild = buffaloDetails[grandchildId];
+                                  return grandchild ? (
+                                    <div key={grandchild.id} className="ml-4 bg-green-50 rounded p-2 mb-1 border border-green-200">
+                                      <div className="font-medium text-green-700 text-sm flex items-center gap-2">
+                                        {grandchild.id}
+                                        <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">Grandchild</span>
+                                      </div>
+                                      <div className="text-xs text-green-600">Born: {grandchild.birthYear}</div>
+                                      <div className="text-xs text-green-600 font-medium">Active</div>
+                                    </div>
+                                  ) : null;
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        ) : null;
                       })}
-                      <td className="px-6 py-4 border-b text-center font-semibold text-purple-600">
-                        {formatCurrency(unitTotal)}
-                      </td>
-                     
-                    </tr>
-                  );
-                })}
-                {/* Yearly Total Row */}
-                <tr className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
-                  <td className="px-6 py-4 font-bold">Yearly Total</td>
-                  {unitBuffaloes.map(buffalo => {
-                    const yearlyTotal = monthNames.reduce((sum, _, monthIndex) => {
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Monthly Revenue Table - Only for Income Producing Buffaloes */}
+        {unitBuffaloes.length > 0 ? (
+          <div className="bg-white rounded-2xl p-8 border border-gray-200">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+              Monthly Revenue Breakdown - {selectedYear} (Unit {selectedUnit})
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-50 to-blue-50">
+                    <th className="px-8 py-6 text-left font-bold text-gray-700 border-b-2 border-r-2 border-gray-300 text-xl">
+                      Month
+                    </th>
+                    {unitBuffaloes.map((buffalo, index) => (
+                      <th 
+                        key={buffalo.id} 
+                        className="px-6 py-6 text-center font-bold text-gray-700 border-b-2 border-r-2 border-gray-300 text-lg"
+                        style={{ 
+                          borderRight: index === unitBuffaloes.length - 1 ? '2px solid #d1d5db' : '1px solid #e5e7eb',
+                          background: 'linear-gradient(to right, #f9fafb, #dbeafe)'
+                        }}
+                      >
+                        <div className="text-xl font-bold">{buffalo.id}</div>
+                        <div className="text-sm font-normal text-gray-500 mt-1">
+                          {buffalo.generation === 0 ? 'Parent' : 
+                           buffalo.generation === 1 ? 'Child' : 'Grandchild'}
+                        </div>
+                      </th>
+                    ))}
+                    <th className="px-8 py-6 text-center font-bold text-gray-700 border-b-2 border-r-2 border-gray-300 text-xl bg-blue-100">
+                      Unit Total
+                    </th>
+                    <th className="px-8 py-6 text-center font-bold text-gray-700 border-b-2 border-r-2 border-gray-300 text-xl bg-orange-100">
+                      CPF Cost
+                    </th>
+                    <th className="px-8 py-6 text-center font-bold text-gray-700 border-b-2 border-gray-300 text-xl bg-green-100">
+                      Net Revenue
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthNames.map((month, monthIndex) => {
+                    const unitTotal = unitBuffaloes.reduce((sum, buffalo) => {
                       return sum + (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0);
                     }, 0);
+                    
+                    const netRevenue = unitTotal - cpfCost.monthlyCPFCost;
+
                     return (
-                      <td key={buffalo.id} className="px-4 py-4 text-center font-bold">
-                        {formatCurrency(yearlyTotal)}
-                      </td>
+                      <tr key={monthIndex} className="hover:bg-blue-50 transition-colors group">
+                        <td className="px-8 py-5 border-b border-r-2 border-gray-300 font-semibold text-gray-900 text-lg bg-gray-50">
+                          {month}
+                        </td>
+                        {unitBuffaloes.map((buffalo, buffaloIndex) => {
+                          const revenue = monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0;
+                          return (
+                            <td 
+                              key={buffalo.id} 
+                              className="px-6 py-5 border-b text-center transition-all duration-200 group-hover:bg-blue-50"
+                              style={{ 
+                                borderRight: buffaloIndex === unitBuffaloes.length - 1 ? '2px solid #d1d5db' : '1px solid #e5e7eb',
+                                background: revenue > 0 ? (revenue === 9000 ? '#f0fdf4' : revenue === 6000 ? '#f0f9ff' : '#f8fafc') : '#f8fafc'
+                              }}
+                            >
+                              <div className={`font-semibold text-lg ${
+                                revenue === 9000 ? 'text-green-600' : 
+                                revenue === 6000 ? 'text-blue-600' : 
+                                'text-gray-400'
+                              }`}>
+                                {formatCurrency(revenue)}
+                              </div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                {revenue === 9000 ? 'High' : revenue === 6000 ? 'Medium' : 'Rest'}
+                              </div>
+                            </td>
+                          );
+                        })}
+                        <td className="px-8 py-5 border-b border-r-2 border-gray-300 text-center font-semibold text-purple-600 text-lg bg-blue-50">
+                          {formatCurrency(unitTotal)}
+                        </td>
+                        <td className="px-8 py-5 border-b border-r-2 border-gray-300 text-center font-semibold text-orange-600 text-lg bg-orange-50">
+                          {formatCurrency(cpfCost.monthlyCPFCost)}
+                        </td>
+                        <td className="px-8 py-5 border-b text-center font-semibold text-lg bg-green-50"
+                            style={{ color: netRevenue >= 0 ? '#059669' : '#dc2626' }}>
+                          {formatCurrency(netRevenue)}
+                        </td>
+                      </tr>
                     );
                   })}
-                  <td className="px-6 py-4 text-center font-bold">
-                    {formatCurrency(unitBuffaloes.reduce((sum, buffalo) => {
-                      return sum + monthNames.reduce((monthSum, _, monthIndex) => {
-                        return monthSum + (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0);
+                  
+                  {/* Yearly Total Row */}
+                  <tr className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
+                    <td className="px-8 py-6 font-bold text-xl border-r-2 border-gray-600">Yearly Total</td>
+                    {unitBuffaloes.map((buffalo, buffaloIndex) => {
+                      const yearlyTotal = monthNames.reduce((sum, _, monthIndex) => {
+                        return sum + (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0);
                       }, 0);
-                    }, 0))}
-                  </td>
-                 
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-yellow-50 rounded-2xl p-8 border border-yellow-200 text-center">
-          <div className="text-2xl font-bold text-yellow-800 mb-4">
-            🐄 No Income Producing Buffaloes
-          </div>
-          <div className="text-lg text-yellow-700">
-            There are no income-producing buffaloes in Unit {selectedUnit} for the year {selectedYear}.
-          </div>
-          <div className="text-sm text-yellow-600 mt-2">
-            Buffaloes start generating income at age 3 (born in {selectedYear - 3} or earlier).
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+                      return (
+                        <td 
+                          key={buffalo.id} 
+                          className="px-6 py-6 text-center font-bold text-lg border-r-2 border-gray-600"
+                          style={{ borderRight: buffaloIndex === unitBuffaloes.length - 1 ? '2px solid #4b5563' : '1px solid #6b7280' }}
+                        >
+                          {formatCurrency(yearlyTotal)}
+                        </td>
+                      );
+                    })}
+                    <td className="px-8 py-6 text-center font-bold text-lg border-r-2 border-gray-600 bg-blue-800">
+                      {formatCurrency(unitBuffaloes.reduce((sum, buffalo) => {
+                        return sum + monthNames.reduce((monthSum, _, monthIndex) => {
+                          return monthSum + (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0);
+                        }, 0);
+                      }, 0))}
+                    </td>
+                    <td className="px-8 py-6 text-center font-bold text-lg border-r-2 border-gray-600 bg-orange-800">
+                      {formatCurrency(cpfCost.annualCPFCost)}
+                    </td>
+                    <td className="px-8 py-6 text-center font-bold text-lg bg-green-800">
+                      {formatCurrency(unitBuffaloes.reduce((sum, buffalo) => {
+                        return sum + monthNames.reduce((monthSum, _, monthIndex) => {
+                          return monthSum + (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0);
+                        }, 0);
+                      }, 0) - cpfCost.annualCPFCost)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
- 
+            {/* Summary Section */}
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-blue-50 rounded-xl p-6 border border-blue-200 text-center">
+                <div className="text-2xl font-bold text-blue-600 mb-2">
+                  {formatCurrency(unitBuffaloes.reduce((sum, buffalo) => {
+                    return sum + monthNames.reduce((monthSum, _, monthIndex) => {
+                      return monthSum + (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0);
+                    }, 0);
+                  }, 0))}
+                </div>
+                <div className="text-lg font-semibold text-blue-700">Total Annual Revenue</div>
+              </div>
+              
+              <div className="bg-orange-50 rounded-xl p-6 border border-orange-200 text-center">
+                <div className="text-2xl font-bold text-orange-600 mb-2">
+                  {formatCurrency(cpfCost.annualCPFCost)}
+                </div>
+                <div className="text-lg font-semibold text-orange-700">Annual CPF Cost</div>
+                <div className="text-sm text-orange-600 mt-1">
+                  {cpfCost.milkProducingBuffaloes} buffaloes × ₹13,000
+                </div>
+              </div>
+              
+              <div className="bg-green-50 rounded-xl p-6 border border-green-200 text-center">
+                <div className="text-2xl font-bold text-green-600 mb-2">
+                  {formatCurrency(unitBuffaloes.reduce((sum, buffalo) => {
+                    return sum + monthNames.reduce((monthSum, _, monthIndex) => {
+                      return monthSum + (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0);
+                    }, 0);
+                  }, 0) - cpfCost.annualCPFCost)}
+                </div>
+                <div className="text-lg font-semibold text-green-700">Net Annual Revenue</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-yellow-50 rounded-2xl p-8 border border-yellow-200 text-center">
+            <div className="text-2xl font-bold text-yellow-800 mb-4">
+              🐄 No Income Producing Buffaloes
+            </div>
+            <div className="text-lg text-yellow-700">
+              There are no income-producing buffaloes in Unit {selectedUnit} for the year {selectedYear}.
+            </div>
+            <div className="text-sm text-yellow-600 mt-2">
+              Buffaloes start generating income at age 3 (born in {selectedYear - 3} or earlier).
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
 
   // Revenue Break-Even Analysis Component
   const RevenueBreakEvenAnalysis = () => (
@@ -751,7 +927,33 @@ const DetailedMonthlyRevenueBreakdown = () => {
     </div>
   );
 
-  
+  // Quick Stats Card Component
+  const QuickStatsCard = () => (
+    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-8 text-white shadow-2xl h-fit">
+      <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span className="text-3xl">🚀</span>
+        Investment Summary
+      </h3>
+      <div className="space-y-5">
+        <div className="flex justify-between items-center p-4 bg-white/10 rounded-xl">
+          <span className="text-lg">Total Investment:</span>
+          <span className="font-bold text-xl">{formatCurrency(initialInvestment.totalInvestment)}</span>
+        </div>
+        <div className="flex justify-between items-center p-4 bg-white/10 rounded-xl">
+          <span className="text-lg">Total Revenue:</span>
+          <span className="font-bold text-xl">{formatCurrency(totalRevenue)}</span>
+        </div>
+        <div className="flex justify-between items-center p-4 bg-white/10 rounded-xl">
+          <span className="text-lg">Final Asset Value:</span>
+          <span className="font-bold text-xl">{formatCurrency(assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0)}</span>
+        </div>
+        <div className="flex justify-between items-center p-4 bg-white/10 rounded-xl">
+          <span className="text-lg">Break-Even Year:</span>
+          <span className="font-bold text-xl">{breakEvenAnalysis.breakEvenYear || 'Not Reached'}</span>
+        </div>
+      </div>
+    </div>
+  );
 
   // Summary Cards Component
   const SummaryCards = () => (
