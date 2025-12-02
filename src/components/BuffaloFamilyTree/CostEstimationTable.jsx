@@ -28,18 +28,70 @@ const CostEstimationTable = ({
   const monthNames = ["January", "February", "March", "April", "May", "June", 
                      "July", "August", "September", "October", "November", "December"];
 
+  // Corrected Age-based buffalo pricing structure
+  const getBuffaloValueByAge = (ageInMonths) => {
+    if (ageInMonths >= 60) {
+      return 175000; // 5+ years (5th year) - Mother buffaloes
+    } else if (ageInMonths >= 48) {
+      return 150000; // 4+ years (5th year)
+    } else if (ageInMonths >= 40) {
+      return 100000; // After 40 months (4 years 1 month)
+    } else if (ageInMonths >= 36) {
+      return 50000; // 36-40 months
+    } else if (ageInMonths >= 30) {
+      return 50000; // 30-36 months
+    } else if (ageInMonths >= 24) {
+      return 35000; // 24-30 months
+    } else if (ageInMonths >= 18) {
+      return 25000; // 18-24 months
+    } else if (ageInMonths >= 12) {
+      return 12000; // 12-18 months
+    } else if (ageInMonths >= 6) {
+      return 6000; // 6-12 months
+    } else {
+      return 3000; // 0-6 months
+    }
+  };
+
+  const getBuffaloValueDescription = (ageInMonths) => {
+    if (ageInMonths >= 60) {
+      return "5+ years (Mother buffalo - ₹1,75,000)";
+    } else if (ageInMonths >= 48) {
+      return "4+ years (5th year - ₹1,50,000)";
+    } else if (ageInMonths >= 40) {
+      return "After 40 months (₹1,00,000)";
+    } else if (ageInMonths >= 36) {
+      return "36-40 months (₹50,000)";
+    } else if (ageInMonths >= 30) {
+      return "30-36 months (₹50,000)";
+    } else if (ageInMonths >= 24) {
+      return "24-30 months (₹35,000)";
+    } else if (ageInMonths >= 18) {
+      return "18-24 months (₹25,000)";
+    } else if (ageInMonths >= 12) {
+      return "12-18 months (₹12,000)";
+    } else if (ageInMonths >= 6) {
+      return "6-12 months (₹6,000)";
+    } else {
+      return "0-6 months (Calves - ₹3,000)";
+    }
+  };
+
   // Investment and Asset Value Calculations
-  const BUFFALO_PRICE = 175000;
+  const MOTHER_BUFFALO_PRICE = 175000; // Correct: Price for mother buffaloes (5th year, 60 months)
   const CPF_PER_UNIT = 13000;
 
-  // Calculate initial investment
+  // Calculate initial investment - 2 mother buffaloes @ ₹1.75 lakhs each + their 2 calves (included free)
   const calculateInitialInvestment = () => {
-    const buffaloCost = treeData.units * 2 * BUFFALO_PRICE;
+    const motherBuffaloCost = treeData.units * 2 * MOTHER_BUFFALO_PRICE; // 2 mother buffaloes per unit
     const cpfCost = treeData.units * CPF_PER_UNIT;
     return {
-      buffaloCost,
+      motherBuffaloCost,
       cpfCost,
-      totalInvestment: buffaloCost + cpfCost
+      totalInvestment: motherBuffaloCost + cpfCost,
+      totalBuffaloesAtStart: treeData.units * 4, // 2 mothers + 2 calves per unit
+      motherBuffaloes: treeData.units * 2,
+      calvesAtStart: treeData.units * 2
     };
   };
 
@@ -65,16 +117,25 @@ const CostEstimationTable = ({
     }
   };
 
+  // Calculate buffalo's age in months at a specific year and month
+  const calculateAgeInMonths = (buffalo, targetYear, targetMonth = 0) => {
+    const birthYear = buffalo.birthYear;
+    const birthMonth = buffalo.birthMonth || 0; // January if not specified
+    
+    const totalMonths = (targetYear - birthYear) * 12 + (targetMonth - birthMonth);
+    return Math.max(0, totalMonths);
+  };
+
   // Detailed buffalo tracking with IDs and relationships
   const getBuffaloDetails = () => {
     const buffaloDetails = {};
     let buffaloCounter = 1;
     
-    // Track initial buffaloes (B1, B2 for each unit)
+    // Track mother buffaloes (B1, B2 for each unit) - these are 60 months old (5 years)
     treeData.buffaloes.forEach(buffalo => {
       if (buffalo.generation === 0) {
         const unit = buffalo.unit || 1;
-        const buffaloId = `B${buffaloCounter}`;
+        const buffaloId = `M${buffaloCounter}`; // M for Mother
         
         buffaloDetails[buffalo.id] = {
           id: buffaloId,
@@ -82,7 +143,8 @@ const CostEstimationTable = ({
           generation: buffalo.generation,
           unit: unit,
           acquisitionMonth: buffalo.acquisitionMonth,
-          birthYear: buffalo.birthYear,
+          birthYear: treeData.startYear - 5, // Mother buffaloes are 5 years old (60 months)
+          birthMonth: buffalo.birthMonth || 0,
           parentId: buffalo.parentId,
           children: [],
           grandchildren: []
@@ -91,45 +153,74 @@ const CostEstimationTable = ({
       }
     });
 
-    // Track children and grandchildren
+    // Track calves that come with the mother buffaloes
+    let calfCounter = 1;
     treeData.buffaloes.forEach(buffalo => {
-      if (buffalo.generation > 0) {
+      if (buffalo.generation === 1 && buffalo.isInitialCalf) {
+        const unit = buffalo.unit || 1;
+        const mother = Object.values(buffaloDetails).find(b => 
+          b.unit === unit && b.generation === 0
+        );
+        
+        if (mother) {
+          const calfId = `${mother.id}C${calfCounter}`;
+          buffaloDetails[buffalo.id] = {
+            id: calfId,
+            originalId: buffalo.id,
+            generation: buffalo.generation,
+            unit: unit,
+            acquisitionMonth: mother.acquisitionMonth,
+            birthYear: treeData.startYear, // Calves are born in the start year
+            birthMonth: 0, // January birth
+            parentId: mother.originalId,
+            children: [],
+            grandchildren: []
+          };
+          mother.children.push(buffalo.id);
+          calfCounter++;
+        }
+      }
+    });
+
+    // Track other children and grandchildren born during simulation
+    treeData.buffaloes.forEach(buffalo => {
+      if (buffalo.generation === 1 && !buffalo.isInitialCalf) {
         const parent = Object.values(buffaloDetails).find(b => b.originalId === buffalo.parentId);
         if (parent) {
-          if (buffalo.generation === 1) {
-            const childId = `${parent.id}C${parent.children.length + 1}`;
-            buffaloDetails[buffalo.id] = {
-              id: childId,
-              originalId: buffalo.id,
-              generation: buffalo.generation,
-              unit: parent.unit,
-              acquisitionMonth: parent.acquisitionMonth,
-              birthYear: buffalo.birthYear,
-              parentId: buffalo.parentId,
-              children: [],
-              grandchildren: []
-            };
-            parent.children.push(buffalo.id);
-          } else if (buffalo.generation === 2) {
-            const grandparent = Object.values(buffaloDetails).find(b => 
-              b.children.includes(buffalo.parentId)
-            );
-            if (grandparent) {
-              const grandchildId = `${grandparent.id}GC${grandparent.grandchildren.length + 1}`;
-              buffaloDetails[buffalo.id] = {
-                id: grandchildId,
-                originalId: buffalo.id,
-                generation: buffalo.generation,
-                unit: grandparent.unit,
-                acquisitionMonth: grandparent.acquisitionMonth,
-                birthYear: buffalo.birthYear,
-                parentId: buffalo.parentId,
-                children: [],
-                grandchildren: []
-              };
-              grandparent.grandchildren.push(buffalo.id);
-            }
-          }
+          const childId = `${parent.id}C${parent.children.length + 1}`;
+          buffaloDetails[buffalo.id] = {
+            id: childId,
+            originalId: buffalo.id,
+            generation: buffalo.generation,
+            unit: parent.unit,
+            acquisitionMonth: parent.acquisitionMonth,
+            birthYear: buffalo.birthYear,
+            birthMonth: buffalo.birthMonth || 0,
+            parentId: buffalo.parentId,
+            children: [],
+            grandchildren: []
+          };
+          parent.children.push(buffalo.id);
+        }
+      } else if (buffalo.generation === 2) {
+        const grandparent = Object.values(buffaloDetails).find(b => 
+          b.children.includes(buffalo.parentId)
+        );
+        if (grandparent) {
+          const grandchildId = `${grandparent.id}GC${grandparent.grandchildren.length + 1}`;
+          buffaloDetails[buffalo.id] = {
+            id: grandchildId,
+            originalId: buffalo.id,
+            generation: buffalo.generation,
+            unit: grandparent.unit,
+            acquisitionMonth: grandparent.acquisitionMonth,
+            birthYear: buffalo.birthYear,
+            birthMonth: buffalo.birthMonth || 0,
+            parentId: buffalo.parentId,
+            children: [],
+            grandchildren: []
+          };
+          grandparent.grandchildren.push(buffalo.id);
         }
       }
     });
@@ -142,11 +233,13 @@ const CostEstimationTable = ({
     const buffaloDetails = getBuffaloDetails();
     const monthlyRevenue = {};
     const investorMonthlyRevenue = {};
+    const buffaloValuesByYear = {}; // Track buffalo values by year
     
     // Initialize monthly revenue structure
     for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
       monthlyRevenue[year] = {};
       investorMonthlyRevenue[year] = {};
+      buffaloValuesByYear[year] = {};
       
       for (let month = 0; month < 12; month++) {
         monthlyRevenue[year][month] = {
@@ -157,10 +250,22 @@ const CostEstimationTable = ({
       }
     }
 
-    // Calculate revenue for each buffalo for each month
+    // Calculate revenue and value for each buffalo for each month
     Object.values(buffaloDetails).forEach(buffalo => {
       for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
-        // Check if buffalo exists in this year
+        // Calculate age in months for this year (at the end of the year)
+        const ageInMonths = calculateAgeInMonths(buffalo, year, 11); // December (end of year)
+        
+        // Track buffalo value for this year
+        if (!buffaloValuesByYear[year][buffalo.id]) {
+          buffaloValuesByYear[year][buffalo.id] = {
+            ageInMonths: ageInMonths,
+            value: getBuffaloValueByAge(ageInMonths),
+            description: getBuffaloValueDescription(ageInMonths)
+          };
+        }
+
+        // Check if buffalo exists in this year and is milk producing (age >= 3 years)
         if (year >= buffalo.birthYear + 3) { // Buffalo becomes productive at age 3
           for (let month = 0; month < 12; month++) {
             const revenue = calculateMonthlyRevenueForBuffalo(
@@ -180,10 +285,10 @@ const CostEstimationTable = ({
       }
     });
 
-    return { monthlyRevenue, investorMonthlyRevenue, buffaloDetails };
+    return { monthlyRevenue, investorMonthlyRevenue, buffaloDetails, buffaloValuesByYear };
   };
 
-  const { monthlyRevenue, investorMonthlyRevenue, buffaloDetails } = calculateDetailedMonthlyRevenue();
+  const { monthlyRevenue, investorMonthlyRevenue, buffaloDetails, buffaloValuesByYear } = calculateDetailedMonthlyRevenue();
 
   // Calculate Revenue Break-Even Analysis with monthly precision
   const calculateBreakEvenAnalysis = () => {
@@ -232,25 +337,134 @@ const CostEstimationTable = ({
 
   const breakEvenAnalysis = calculateBreakEvenAnalysis();
 
-  // Calculate Asset Market Value
+  // Calculate Asset Market Value based on age-based pricing
   const calculateAssetMarketValue = () => {
-    return yearlyData.map(yearData => ({
-      year: yearData.year,
-      totalBuffaloes: yearData.totalBuffaloes,
-      assetValue: yearData.totalBuffaloes * BUFFALO_PRICE,
-      totalAssetValue: (yearData.totalBuffaloes * BUFFALO_PRICE)
-    }));
+    const assetValues = [];
+    
+    // Calculate asset value for each year
+    for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
+      let totalAssetValue = 0;
+      let motherBuffaloes = 0;
+      let fiveYearBuffaloes = 0;
+      let after40MonthBuffaloes = 0;
+      let growingBuffaloes = 0;
+      let calfBuffaloes = 0;
+      
+      // Sum values of all buffaloes alive in this year
+      Object.values(buffaloDetails).forEach(buffalo => {
+        if (year >= buffalo.birthYear) { // Buffalo is alive
+          const ageInMonths = calculateAgeInMonths(buffalo, year, 11); // Age at end of year
+          const value = getBuffaloValueByAge(ageInMonths);
+          totalAssetValue += value;
+          
+          if (buffalo.generation === 0) {
+            motherBuffaloes++; // Original mother buffaloes
+          }
+          
+          if (ageInMonths >= 60) {
+            fiveYearBuffaloes++;
+          } else if (ageInMonths >= 40) {
+            after40MonthBuffaloes++;
+          } else if (ageInMonths >= 12) {
+            growingBuffaloes++;
+          } else {
+            calfBuffaloes++;
+          }
+        }
+      });
+      
+      const yearData = yearlyData.find(d => d.year === year);
+      
+      assetValues.push({
+        year: year,
+        totalBuffaloes: yearData?.totalBuffaloes || 0,
+        motherBuffaloes: motherBuffaloes,
+        fiveYearBuffaloes: fiveYearBuffaloes,
+        after40MonthBuffaloes: after40MonthBuffaloes,
+        growingBuffaloes: growingBuffaloes,
+        calfBuffaloes: calfBuffaloes,
+        totalAssetValue: totalAssetValue
+      });
+    }
+
+    return assetValues;
   };
 
   const assetMarketValue = calculateAssetMarketValue();
 
+  // Detailed Asset Value Breakdown by Age Group
+  const calculateDetailedAssetValue = (year) => {
+    const ageGroups = {
+      '0-6 months (Calves)': { count: 0, value: 0, unitValue: 3000 },
+      '6-12 months': { count: 0, value: 0, unitValue: 6000 },
+      '12-18 months': { count: 0, value: 0, unitValue: 12000 },
+      '18-24 months': { count: 0, value: 0, unitValue: 25000 },
+      '24-30 months': { count: 0, value: 0, unitValue: 35000 },
+      '30-36 months': { count: 0, value: 0, unitValue: 50000 },
+      '36-40 months': { count: 0, value: 0, unitValue: 50000 },
+      '40-48 months': { count: 0, value: 0, unitValue: 100000 },
+      '48-60 months': { count: 0, value: 0, unitValue: 150000 },
+      '60+ months (Mother Buffalo)': { count: 0, value: 0, unitValue: 175000 }
+    };
+
+    let totalValue = 0;
+    let totalCount = 0;
+
+    Object.values(buffaloDetails).forEach(buffalo => {
+      if (year >= buffalo.birthYear) {
+        const ageInMonths = calculateAgeInMonths(buffalo, year, 11);
+        const value = getBuffaloValueByAge(ageInMonths);
+        
+        if (ageInMonths >= 60) {
+          ageGroups['60+ months (Mother Buffalo)'].count++;
+          ageGroups['60+ months (Mother Buffalo)'].value += value;
+        } else if (ageInMonths >= 48) {
+          ageGroups['48-60 months'].count++;
+          ageGroups['48-60 months'].value += value;
+        } else if (ageInMonths >= 40) {
+          ageGroups['40-48 months'].count++;
+          ageGroups['40-48 months'].value += value;
+        } else if (ageInMonths >= 36) {
+          ageGroups['36-40 months'].count++;
+          ageGroups['36-40 months'].value += value;
+        } else if (ageInMonths >= 30) {
+          ageGroups['30-36 months'].count++;
+          ageGroups['30-36 months'].value += value;
+        } else if (ageInMonths >= 24) {
+          ageGroups['24-30 months'].count++;
+          ageGroups['24-30 months'].value += value;
+        } else if (ageInMonths >= 18) {
+          ageGroups['18-24 months'].count++;
+          ageGroups['18-24 months'].value += value;
+        } else if (ageInMonths >= 12) {
+          ageGroups['12-18 months'].count++;
+          ageGroups['12-18 months'].value += value;
+        } else if (ageInMonths >= 6) {
+          ageGroups['6-12 months'].count++;
+          ageGroups['6-12 months'].value += value;
+        } else {
+          ageGroups['0-6 months (Calves)'].count++;
+          ageGroups['0-6 months (Calves)'].value += value;
+        }
+        
+        totalValue += value;
+        totalCount++;
+      }
+    });
+
+    return { ageGroups, totalValue, totalCount };
+  };
+
   // Calculate herd statistics
   const herdStats = {
-    startingBuffaloes: treeData.units * 2,
+    startingBuffaloes: initialInvestment.totalBuffaloesAtStart,
+    motherBuffaloes: initialInvestment.motherBuffaloes,
+    initialCalves: initialInvestment.calvesAtStart,
     finalBuffaloes: treeData.totalBuffaloes,
-    growthMultiple: treeData.totalBuffaloes / (treeData.units * 2),
+    growthMultiple: treeData.totalBuffaloes / initialInvestment.totalBuffaloesAtStart,
     averageMatureBuffaloes: totalMatureBuffaloYears / treeData.years,
-    revenuePerBuffalo: totalRevenue / treeData.totalBuffaloes
+    revenuePerBuffalo: totalRevenue / treeData.totalBuffaloes,
+    initialInvestmentPerBuffalo: initialInvestment.totalInvestment / initialInvestment.totalBuffaloesAtStart
   };
 
   // Function to convert number to words in Indian numbering system
@@ -310,7 +524,138 @@ const CostEstimationTable = ({
     return words + ' Rupees Only';
   };
 
-  // NEW: Detailed Monthly Revenue Breakdown Component - Only Showing Income-Producing Buffaloes
+  // Buffalo Value By Age Breakdown Component
+  const BuffaloValueByAge = () => {
+    const [selectedYear, setSelectedYear] = useState(treeData.startYear + treeData.years);
+    
+    const detailedAssetValue = calculateDetailedAssetValue(selectedYear);
+    
+    return (
+      <div className="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-3xl p-10 shadow-2xl border border-purple-200 mb-16">
+        <h2 className="text-4xl font-bold text-purple-800 mb-10 text-center flex items-center justify-center gap-4">
+          <span className="text-5xl">💰</span>
+          Buffalo Value By Age (Market Valuation)
+        </h2>
+        
+        {/* Year Selection */}
+        <div className="bg-white rounded-2xl p-6 border border-purple-200 mb-8 max-w-md mx-auto">
+          <label className="block text-lg font-semibold text-purple-700 mb-3">
+            Select Year for Valuation:
+          </label>
+          <select 
+            value={selectedYear} 
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            className="w-full p-3 border border-purple-300 rounded-xl text-lg"
+          >
+            {Array.from({ length: treeData.years + 1 }, (_, i) => (
+              <option key={i} value={treeData.startYear + i}>
+                {treeData.startYear + i} (Year {i + 1})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Total Value Summary */}
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-2xl p-8 text-white text-center shadow-2xl mb-8">
+          <div className="text-2xl font-bold mb-2">Total Asset Value in {selectedYear}</div>
+          <div className="text-5xl font-bold mb-4">{formatCurrency(detailedAssetValue.totalValue)}</div>
+          <div className="text-lg opacity-90">
+            {detailedAssetValue.totalCount} buffaloes | Average: {formatCurrency(detailedAssetValue.totalValue / detailedAssetValue.totalCount)}
+          </div>
+        </div>
+
+        {/* Age Group Breakdown */}
+        <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg mb-8">
+          <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Age-Based Valuation Breakdown</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-gray-50 to-purple-50">
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Age Group</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Unit Value</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Count</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Value</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">% of Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(detailedAssetValue.ageGroups)
+                  .filter(([_, data]) => data.count > 0)
+                  .map(([ageGroup, data], index) => (
+                    <tr key={ageGroup} className="hover:bg-purple-50 transition-colors">
+                      <td className="px-6 py-4 border-b">
+                        <div className="font-semibold text-gray-900">{ageGroup}</div>
+                      </td>
+                      <td className="px-6 py-4 border-b font-semibold text-blue-600">
+                        {formatCurrency(data.unitValue)}
+                      </td>
+                      <td className="px-6 py-4 border-b font-semibold text-purple-600">
+                        {data.count}
+                      </td>
+                      <td className="px-6 py-4 border-b font-semibold text-green-600">
+                        {formatCurrency(data.value)}
+                      </td>
+                      <td className="px-6 py-4 border-b">
+                        <div className="flex items-center gap-3">
+                          <div className="w-full bg-gray-200 rounded-full h-4">
+                            <div 
+                              className="bg-purple-500 h-4 rounded-full" 
+                              style={{ width: `${(data.value / detailedAssetValue.totalValue) * 100}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-sm font-semibold text-gray-600 min-w-[50px]">
+                            {((data.value / detailedAssetValue.totalValue) * 100).toFixed(1)}%
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
+                  <td className="px-6 py-4 font-bold">Total</td>
+                  <td className="px-6 py-4 font-bold">-</td>
+                  <td className="px-6 py-4 font-bold">{detailedAssetValue.totalCount}</td>
+                  <td className="px-6 py-4 font-bold">{formatCurrency(detailedAssetValue.totalValue)}</td>
+                  <td className="px-6 py-4 font-bold">100%</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        {/* Price Schedule */}
+        <div className="bg-gradient-to-br from-blue-50 to-cyan-100 rounded-2xl p-8 border border-blue-200">
+          <h3 className="text-2xl font-bold text-blue-800 mb-6 text-center">📋 Age-Based Price Schedule</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { age: '0-6 months (Calves)', price: '₹3,000', color: 'from-blue-100 to-blue-200', desc: 'New born calves' },
+              { age: '6-12 months', price: '₹6,000', color: 'from-blue-200 to-blue-300', desc: 'Growing' },
+              { age: '12-18 months', price: '₹12,000', color: 'from-green-100 to-green-200', desc: 'Growing' },
+              { age: '18-24 months', price: '₹25,000', color: 'from-green-200 to-green-300', desc: 'Growing' },
+              { age: '24-30 months', price: '₹35,000', color: 'from-orange-100 to-orange-200', desc: 'Growing' },
+              { age: '30-36 months', price: '₹50,000', color: 'from-orange-200 to-orange-300', desc: 'Growing' },
+              { age: '36-40 months', price: '₹50,000', color: 'from-red-100 to-red-200', desc: 'Transition' },
+              { age: '40-48 months', price: '₹1,00,000', color: 'from-red-200 to-red-300', desc: '4+ years' },
+              { age: '48-60 months', price: '₹1,50,000', color: 'from-purple-100 to-purple-200', desc: '5th year (4+ years)' },
+              { age: '60+ months (Mother Buffalo)', price: '₹1,75,000', color: 'from-purple-200 to-purple-300', desc: '5+ years (Mother buffaloes)' }
+            ].map((item, index) => (
+              <div 
+                key={index} 
+                className={`bg-gradient-to-br ${item.color} rounded-xl p-6 border border-gray-200 shadow-lg`}
+              >
+                <div className="text-xl font-bold text-gray-800 mb-2">{item.age}</div>
+                <div className="text-2xl font-bold text-gray-900">{item.price}</div>
+                <div className="text-sm text-gray-600 mt-2">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Detailed Monthly Revenue Breakdown Component
   const DetailedMonthlyRevenueBreakdown = () => {
     const [selectedYear, setSelectedYear] = useState(treeData.startYear);
     const [selectedUnit, setSelectedUnit] = useState(1);
@@ -320,7 +665,6 @@ const CostEstimationTable = ({
       .filter(buffalo => buffalo.unit === selectedUnit)
       .filter(buffalo => {
         // Check if buffalo is income-producing in the selected year
-        // Buffalo must be at least 3 years old and have revenue in at least one month
         if (selectedYear < buffalo.birthYear + 3) {
           return false; // Buffalo is too young
         }
@@ -482,88 +826,11 @@ const CostEstimationTable = ({
             {unitBuffaloes.length} Income Producing Buffaloes in {selectedYear}
           </div>
           <div className="text-lg opacity-90">
-            Unit {selectedUnit} | Showing only buffaloes generating revenue
+            Unit {selectedUnit} | Showing only buffaloes generating revenue (age 3+ years)
           </div>
         </div>
 
-        {/* Buffalo Family Tree for Selected Unit - Only Showing Income Producing */}
-        {unitBuffaloes.length > 0 && (
-          <div className="bg-white rounded-2xl p-8 border border-purple-200 mb-8">
-            <h3 className="text-2xl font-bold text-purple-800 mb-6 text-center">
-              🐃 Income Producing Buffaloes - Unit {selectedUnit} ({selectedYear})
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {unitBuffaloes.filter(b => b.generation === 0).map((parent, index) => (
-                <div key={parent.id} className="bg-purple-50 rounded-xl p-6 border border-purple-300">
-                  <div className="text-xl font-bold text-purple-700 mb-4 flex items-center gap-2">
-                    {parent.id} 
-                    <span className="text-sm bg-green-500 text-white px-2 py-1 rounded-full">Parent</span>
-                  </div>
-                  <div className="text-sm text-purple-600 mb-2">
-                    Acquisition: {monthNames[parent.acquisitionMonth]}
-                  </div>
-                  <div className="text-sm text-green-600 font-semibold">
-                    Active in {selectedYear}
-                  </div>
-                  
-                  {/* Children - Only show income producing ones */}
-                  {parent.children.filter(childId => {
-                    const child = buffaloDetails[childId];
-                    return child && unitBuffaloes.some(b => b.id === child.id);
-                  }).length > 0 && (
-                    <div className="mt-4">
-                      <div className="font-semibold text-purple-600 mb-2">Children:</div>
-                      {parent.children.filter(childId => {
-                        const child = buffaloDetails[childId];
-                        return child && unitBuffaloes.some(b => b.id === child.id);
-                      }).map(childId => {
-                        const child = buffaloDetails[childId];
-                        return child ? (
-                          <div key={child.id} className="ml-4 bg-blue-50 rounded-lg p-3 mb-2 border border-blue-200">
-                            <div className="font-semibold text-blue-700 flex items-center gap-2">
-                              {child.id}
-                              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">Child</span>
-                            </div>
-                            <div className="text-xs text-blue-600">Born: {child.birthYear}</div>
-                            <div className="text-xs text-green-600 font-medium">Active</div>
-                            
-                            {/* Grandchildren - Only show income producing ones */}
-                            {child.grandchildren.filter(grandchildId => {
-                              const grandchild = buffaloDetails[grandchildId];
-                              return grandchild && unitBuffaloes.some(b => b.id === grandchild.id);
-                            }).length > 0 && (
-                              <div className="mt-2">
-                                <div className="font-medium text-blue-600 text-xs mb-1">Grandchildren:</div>
-                                {child.grandchildren.filter(grandchildId => {
-                                  const grandchild = buffaloDetails[grandchildId];
-                                  return grandchild && unitBuffaloes.some(b => b.id === grandchild.id);
-                                }).map(grandchildId => {
-                                  const grandchild = buffaloDetails[grandchildId];
-                                  return grandchild ? (
-                                    <div key={grandchild.id} className="ml-4 bg-green-50 rounded p-2 mb-1 border border-green-200">
-                                      <div className="font-medium text-green-700 text-sm flex items-center gap-2">
-                                        {grandchild.id}
-                                        <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">Grandchild</span>
-                                      </div>
-                                      <div className="text-xs text-green-600">Born: {grandchild.birthYear}</div>
-                                      <div className="text-xs text-green-600 font-medium">Active</div>
-                                    </div>
-                                  ) : null;
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        ) : null;
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Monthly Revenue Table - Only for Income Producing Buffaloes */}
+        {/* Monthly Revenue Table */}
         {unitBuffaloes.length > 0 ? (
           <div className="bg-white rounded-2xl p-8 border border-gray-200">
             <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
@@ -581,13 +848,12 @@ const CostEstimationTable = ({
                         key={buffalo.id} 
                         className="px-6 py-6 text-center font-bold text-gray-700 border-b-2 border-r-2 border-gray-300 text-lg"
                         style={{ 
-                          borderRight: index === unitBuffaloes.length - 1 ? '2px solid #d1d5db' : '1px solid #e5e7eb',
-                          background: 'linear-gradient(to right, #f9fafb, #dbeafe)'
+                          borderRight: index === unitBuffaloes.length - 1 ? '2px solid #d1d5db' : '1px solid #e5e7eb'
                         }}
                       >
                         <div className="text-xl font-bold">{buffalo.id}</div>
                         <div className="text-sm font-normal text-gray-500 mt-1">
-                          {buffalo.generation === 0 ? 'Parent' : 
+                          {buffalo.generation === 0 ? 'Mother' : 
                            buffalo.generation === 1 ? 'Child' : 'Grandchild'}
                         </div>
                       </th>
@@ -745,7 +1011,6 @@ const CostEstimationTable = ({
     );
   };
 
-
   // Revenue Break-Even Analysis Component
   const RevenueBreakEvenAnalysis = () => (
     <div className="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-3xl p-10 shadow-2xl border border-purple-200 mb-16">
@@ -758,11 +1023,13 @@ const CostEstimationTable = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
         <div className="bg-white rounded-2xl p-8 border border-blue-200 shadow-lg text-center">
           <div className="text-3xl font-bold text-blue-600 mb-4">
-            {formatCurrency(initialInvestment.buffaloCost)}
+            {formatCurrency(initialInvestment.motherBuffaloCost)}
           </div>
-          <div className="text-lg font-semibold text-blue-700">Buffalo Cost</div>
+          <div className="text-lg font-semibold text-blue-700">Mother Buffaloes (60 months old)</div>
           <div className="text-sm text-gray-600 mt-2">
-            {treeData.units} units × 2 buffaloes × ₹1.75 Lakhs
+            {treeData.units} units × 2 mothers × ₹1.75 Lakhs
+            <br />
+            {initialInvestment.motherBuffaloes} mother buffaloes @ ₹1.75 Lakhs each
           </div>
         </div>
 
@@ -773,6 +1040,8 @@ const CostEstimationTable = ({
           <div className="text-lg font-semibold text-green-700">CPF Cost</div>
           <div className="text-sm text-gray-600 mt-2">
             {treeData.units} units × ₹13,000
+            <br />
+            Annual cattle protection fund
           </div>
         </div>
 
@@ -780,8 +1049,27 @@ const CostEstimationTable = ({
           <div className="text-3xl font-bold mb-4">
             {formatCurrency(initialInvestment.totalInvestment)}
           </div>
-          <div className="text-lg font-semibold opacity-90">Total Investment</div>
-          <div className="text-sm opacity-80 mt-2">Initial Capital Outlay</div>
+          <div className="text-lg font-semibold opacity-90">Total Initial Investment</div>
+          <div className="text-sm opacity-80 mt-2">
+            Includes {initialInvestment.totalBuffaloesAtStart} buffaloes (2 mothers + 2 calves per unit)
+          </div>
+        </div>
+      </div>
+
+      {/* Starting Buffalo Summary */}
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-8 text-white text-center shadow-2xl mb-8">
+        <div className="text-2xl font-bold mb-4">Starting Buffaloes (Included in Initial Purchase)</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+            <div className="text-3xl font-bold">{initialInvestment.motherBuffaloes}</div>
+            <div className="text-lg font-semibold">Mother Buffaloes (60 months)</div>
+            <div className="text-sm opacity-90">5th year @ ₹1.75 Lakhs each</div>
+          </div>
+          <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+            <div className="text-3xl font-bold">{initialInvestment.calvesAtStart}</div>
+            <div className="text-lg font-semibold">Newborn Calves</div>
+            <div className="text-sm opacity-90">Included free with mothers</div>
+          </div>
         </div>
       </div>
 
@@ -808,39 +1096,57 @@ const CostEstimationTable = ({
                 <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Year</th>
                 <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Annual Revenue</th>
                 <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Cumulative Revenue</th>
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Status</th>
+                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Investment Recovery</th>
               </tr>
             </thead>
             <tbody>
-              {breakEvenAnalysis.breakEvenData.map((data, index) => (
-                <tr key={data.year} className="hover:bg-blue-50 transition-colors">
-                  <td className="px-6 py-4 border-b">
-                    <div className="font-semibold text-gray-900">{data.year}</div>
-                    <div className="text-sm text-gray-600">Year {index + 1}</div>
-                  </td>
-                  <td className="px-6 py-4 border-b font-semibold text-green-600">
-                    {formatCurrency(data.annualRevenue)}
-                  </td>
-                  <td className="px-6 py-4 border-b font-semibold text-blue-600">
-                    {formatCurrency(data.cumulativeRevenue)}
-                  </td>
-                  <td className="px-6 py-4 border-b">
-                    {data.isBreakEven ? (
-                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
-                        ✓ Break-Even
-                      </span>
-                    ) : data.cumulativeRevenue >= initialInvestment.totalInvestment * 0.5 ? (
-                      <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
-                        50% Recovered
-                      </span>
-                    ) : (
-                      <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
-                        In Progress
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {breakEvenAnalysis.breakEvenData.map((data, index) => {
+                const recoveryPercentage = (data.cumulativeRevenue / initialInvestment.totalInvestment) * 100;
+                return (
+                  <tr key={data.year} className="hover:bg-blue-50 transition-colors">
+                    <td className="px-6 py-4 border-b">
+                      <div className="font-semibold text-gray-900">{data.year}</div>
+                      <div className="text-sm text-gray-600">Year {index + 1}</div>
+                    </td>
+                    <td className="px-6 py-4 border-b font-semibold text-green-600">
+                      {formatCurrency(data.annualRevenue)}
+                    </td>
+                    <td className="px-6 py-4 border-b font-semibold text-blue-600">
+                      {formatCurrency(data.cumulativeRevenue)}
+                    </td>
+                    <td className="px-6 py-4 border-b">
+                      <div className="flex items-center gap-3">
+                        <div className="w-full bg-gray-200 rounded-full h-4">
+                          <div 
+                            className={`h-4 rounded-full ${recoveryPercentage >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                            style={{ width: `${Math.min(recoveryPercentage, 100)}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-sm font-semibold text-gray-600 min-w-[60px]">
+                          {recoveryPercentage.toFixed(1)}%
+                        </div>
+                      </div>
+                      {data.isBreakEven ? (
+                        <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold mt-2 inline-block">
+                          ✓ Break-Even
+                        </span>
+                      ) : recoveryPercentage >= 75 ? (
+                        <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold mt-2 inline-block">
+                          75% Recovered
+                        </span>
+                      ) : recoveryPercentage >= 50 ? (
+                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold mt-2 inline-block">
+                          50% Recovered
+                        </span>
+                      ) : (
+                        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm mt-2 inline-block">
+                          In Progress
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -849,83 +1155,135 @@ const CostEstimationTable = ({
   );
 
   // Asset Market Value Component
-  const AssetMarketValue = () => (
-    <div className="bg-gradient-to-br from-orange-50 to-red-100 rounded-3xl p-10 shadow-2xl border border-orange-200 mb-16">
-      <h2 className="text-4xl font-bold text-orange-800 mb-10 text-center flex items-center justify-center gap-4">
-        <span className="text-5xl">🏦</span>
-        Asset Market Value Analysis
-      </h2>
+  const AssetMarketValue = () => {
+    const [selectedYear, setSelectedYear] = useState(treeData.startYear + treeData.years);
+    const detailedAssetValue = calculateDetailedAssetValue(selectedYear);
+    const selectedAssetValue = assetMarketValue.find(a => a.year === selectedYear) || assetMarketValue[assetMarketValue.length - 1];
 
-      {/* Current vs Final Asset Value */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-        <div className="bg-white rounded-2xl p-8 border border-blue-200 shadow-lg text-center">
-          <div className="text-3xl font-bold text-blue-600 mb-4">
-            {formatCurrency(assetMarketValue[0]?.totalAssetValue || 0)}
-          </div>
-          <div className="text-lg font-semibold text-blue-700">Initial Asset Value</div>
-          <div className="text-sm text-gray-600 mt-2">
-            {assetMarketValue[0]?.totalBuffaloes || 0} buffaloes × ₹1.75 Lakhs 
-          </div>
-        </div>
+    return (
+      <div className="bg-gradient-to-br from-orange-50 to-red-100 rounded-3xl p-10 shadow-2xl border border-orange-200 mb-16">
+        <h2 className="text-4xl font-bold text-orange-800 mb-10 text-center flex items-center justify-center gap-4">
+          <span className="text-5xl">🏦</span>
+          Asset Market Value Analysis
+        </h2>
 
-        <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-8 text-white shadow-lg text-center">
-          <div className="text-3xl font-bold mb-4">
-            {formatCurrency(assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0)}
-          </div>
-          <div className="text-lg font-semibold opacity-90">Final Asset Value</div>
-          <div className="text-sm opacity-80 mt-2">
-            {assetMarketValue[assetMarketValue.length - 1]?.totalBuffaloes || 0} buffaloes × ₹1.75 Lakhs + CPF
-          </div>
-        </div>
-      </div>
-
-      {/* Asset Growth Multiple */}
-      <div className="bg-white rounded-2xl p-6 border border-green-200 shadow-lg text-center mb-8">
-        <div className="text-2xl font-bold text-green-600">
-          Asset Growth: {((assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0) / (assetMarketValue[0]?.totalAssetValue || 1)).toFixed(1)}x
-        </div>
-        <div className="text-lg text-gray-600 mt-2">
-          From {formatCurrency(assetMarketValue[0]?.totalAssetValue || 0)} to {formatCurrency(assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0)}
-        </div>
-      </div>
-
-      {/* Yearly Asset Value Table */}
-      <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg">
-        <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Yearly Asset Market Value</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gradient-to-r from-gray-50 to-orange-50">
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Year</th>
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Buffaloes</th>
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Buffalo Value</th>
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Asset Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {assetMarketValue.map((data, index) => (
-                <tr key={data.year} className="hover:bg-orange-50 transition-colors">
-                  <td className="px-6 py-4 border-b">
-                    <div className="font-semibold text-gray-900">{data.year}</div>
-                    <div className="text-sm text-gray-600">Year {index + 1}</div>
-                  </td>
-                  <td className="px-6 py-4 border-b font-semibold text-purple-600">
-                    {formatNumber(data.totalBuffaloes)}
-                  </td>
-                  <td className="px-6 py-4 border-b font-semibold text-blue-600">
-                    {formatCurrency(data.assetValue)}
-                  </td>
-                  <td className="px-6 py-4 border-b font-semibold text-orange-600">
-                    {formatCurrency(data.totalAssetValue)}
-                  </td>
-                </tr>
+        {/* Year Selection and Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <div className="bg-white rounded-2xl p-6 border border-orange-200">
+            <label className="block text-lg font-semibold text-orange-700 mb-3">
+              Select Year for Valuation:
+            </label>
+            <select 
+              value={selectedYear} 
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="w-full p-3 border border-orange-300 rounded-xl text-lg"
+            >
+              {assetMarketValue.map((asset, index) => (
+                <option key={index} value={asset.year}>
+                  {asset.year} (Year {asset.year - treeData.startYear + 1})
+                </option>
               ))}
-            </tbody>
-          </table>
+            </select>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-6 text-white shadow-lg text-center">
+            <div className="text-2xl font-bold mb-2">Total Asset Value</div>
+            <div className="text-4xl font-bold mb-2">{formatCurrency(selectedAssetValue?.totalAssetValue || 0)}</div>
+            <div className="text-lg opacity-90">
+              {selectedAssetValue?.totalBuffaloes || 0} buffaloes
+            </div>
+          </div>
+        </div>
+
+        {/* Current vs Final Asset Value */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <div className="bg-white rounded-2xl p-8 border border-blue-200 shadow-lg text-center">
+            <div className="text-3xl font-bold text-blue-600 mb-4">
+              {formatCurrency(assetMarketValue[0]?.totalAssetValue || 0)}
+            </div>
+            <div className="text-lg font-semibold text-blue-700">Initial Asset Value</div>
+            <div className="text-sm text-gray-600 mt-2">
+              {assetMarketValue[0]?.totalBuffaloes || 0} buffaloes
+              <br />
+              2 mothers (60 months, ₹1.75L each) + 2 calves (newborn, ₹3k each)
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-8 text-white shadow-lg text-center">
+            <div className="text-3xl font-bold mb-4">
+              {formatCurrency(assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0)}
+            </div>
+            <div className="text-lg font-semibold opacity-90">Final Asset Value</div>
+            <div className="text-sm opacity-80 mt-2">
+              {assetMarketValue[assetMarketValue.length - 1]?.totalBuffaloes || 0} buffaloes
+              <br />
+              Multiple generations with age-based valuation
+            </div>
+          </div>
+        </div>
+
+        {/* Asset Growth Multiple */}
+        <div className="bg-white rounded-2xl p-6 border border-green-200 shadow-lg text-center mb-8">
+          <div className="text-2xl font-bold text-green-600">
+            Asset Growth: {((assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0) / (assetMarketValue[0]?.totalAssetValue || 1)).toFixed(1)}x
+          </div>
+          <div className="text-lg text-gray-600 mt-2">
+            From {formatCurrency(assetMarketValue[0]?.totalAssetValue || 0)} to {formatCurrency(assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0)}
+          </div>
+          <div className="text-sm text-gray-500 mt-2">
+            Includes value appreciation as buffaloes mature through age brackets
+          </div>
+        </div>
+
+        {/* Yearly Asset Value Table */}
+        <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg">
+          <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Yearly Asset Market Value</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-gray-50 to-orange-50">
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Year</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Buffaloes</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Mother Buffaloes</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">60+ months (₹1.75L)</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Calves (0-6m)</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Asset Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assetMarketValue.map((data, index) => (
+                  <tr 
+                    key={data.year} 
+                    className={`hover:bg-orange-50 transition-colors ${data.year === selectedYear ? 'bg-orange-50 border-l-4 border-orange-500' : ''}`}
+                  >
+                    <td className="px-6 py-4 border-b">
+                      <div className="font-semibold text-gray-900">{data.year}</div>
+                      <div className="text-sm text-gray-600">Year {index + 1}</div>
+                    </td>
+                    <td className="px-6 py-4 border-b font-semibold text-purple-600">
+                      {formatNumber(data.totalBuffaloes)}
+                    </td>
+                    <td className="px-6 py-4 border-b font-semibold text-blue-600">
+                      {formatNumber(data.motherBuffaloes)}
+                    </td>
+                    <td className="px-6 py-4 border-b font-semibold text-red-600">
+                      {formatNumber(data.fiveYearBuffaloes)}
+                    </td>
+                    <td className="px-6 py-4 border-b font-semibold text-green-600">
+                      {formatNumber(data.calfBuffaloes)}
+                    </td>
+                    <td className="px-6 py-4 border-b font-semibold text-orange-600">
+                      {formatCurrency(data.totalAssetValue)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Quick Stats Card Component
   const QuickStatsCard = () => (
@@ -961,7 +1319,11 @@ const CostEstimationTable = ({
       <div className="bg-white rounded-3xl p-8 shadow-2xl border border-blue-100 text-center transform hover:scale-105 transition-transform duration-300">
         <div className="text-5xl font-bold text-blue-600 mb-4">{treeData.units}</div>
         <div className="text-lg font-semibold text-gray-600 uppercase tracking-wide">Starting Units</div>
-        <div className="text-sm text-gray-500 mt-2">{herdStats.startingBuffaloes} initial buffaloes</div>
+        <div className="text-sm text-gray-500 mt-2">
+          {herdStats.startingBuffaloes} buffaloes total
+          <br />
+          ({herdStats.motherBuffaloes} mothers + {herdStats.initialCalves} calves)
+        </div>
         <div className="w-16 h-2 bg-blue-500 mx-auto mt-4 rounded-full"></div>
       </div>
       
@@ -1173,7 +1535,8 @@ const CostEstimationTable = ({
         </h3>
         <div className="space-y-6">
           {[
-            { title: "Initial Investment", description: `${formatCurrency(initialInvestment.totalInvestment)} (Buffaloes: ${formatCurrency(initialInvestment.buffaloCost)} + CPF: ${formatCurrency(initialInvestment.cpfCost)})` },
+            { title: "Initial Investment", description: `${formatCurrency(initialInvestment.totalInvestment)} (Mother Buffaloes: ${formatCurrency(initialInvestment.motherBuffaloCost)} + CPF: ${formatCurrency(initialInvestment.cpfCost)})` },
+            { title: "Starting Buffaloes", description: `${herdStats.startingBuffaloes} total (${herdStats.motherBuffaloes} mothers @ ₹1.75L each + ${herdStats.initialCalves} calves included)` },
             { title: "Break-Even Point", description: breakEvenAnalysis.breakEvenYear ? `Year ${breakEvenAnalysis.breakEvenYear}` : 'Not reached within simulation period' },
             { title: "Asset Growth", description: `${((assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0) / (assetMarketValue[0]?.totalAssetValue || 1)).toFixed(1)}x growth in ${treeData.years} years` },
             { title: "Total Returns", description: `Revenue: ${formatCurrency(totalRevenue)} + Final Assets: ${formatCurrency(assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0)}` },
@@ -1226,13 +1589,13 @@ const CostEstimationTable = ({
           <div className="text-center mb-16">
             <div className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 text-white px-12 py-8 rounded-3xl shadow-2xl mb-8 transform hover:scale-105 transition-transform duration-300">
               <h1 className="text-5xl font-bold mb-4">🐃 Buffalo Herd Investment Analysis</h1>
-              <h2 className="text-3xl font-semibold opacity-90">Complete Financial Projection with Monthly Breakdown & Asset Valuation</h2>
+              <h2 className="text-3xl font-semibold opacity-90">2 Mother Buffaloes (60 months) + 2 Calves per Unit | Complete Financial Projection</h2>
             </div>
             <p className="text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
               Comprehensive financial analysis for {treeData.units} starting unit{treeData.units > 1 ? 's' : ''} over {treeData.years} years
               <br />
               <span className="text-lg text-gray-500">
-                Individual buffalo tracking | Monthly revenue breakdown | Family tree visualization
+                Each unit starts with 2 mother buffaloes (₹1.75L each, 60 months old) + 2 newborn calves (included free) | Age-based asset valuation
               </span>
             </p>
           </div>
@@ -1241,9 +1604,12 @@ const CostEstimationTable = ({
           <SummaryCards />
           <div className="h-10"></div>
 
-          {/* NEW: Detailed Monthly Revenue Components */}
+          {/* Buffalo Value By Age Component */}
+          <BuffaloValueByAge />
+          <div className="h-10"></div>
+
+          {/* Detailed Monthly Revenue Components */}
           <DetailedMonthlyRevenueBreakdown />
-          
           <div className="h-10"></div>
 
           {/* Revenue Break-Even Analysis */}
