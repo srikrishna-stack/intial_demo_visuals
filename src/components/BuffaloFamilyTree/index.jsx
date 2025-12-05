@@ -9,6 +9,7 @@ export default function BuffaloFamilyTree() {
   const [years, setYears] = useState(10);
   const [startYear, setStartYear] = useState(2026);
   const [startMonth, setStartMonth] = useState(0); // 0 = January
+  const [startDay, setStartDay] = useState(1); // New: Day selection
   const [treeData, setTreeData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -20,7 +21,23 @@ export default function BuffaloFamilyTree() {
   const containerRef = useRef(null);
   const treeContainerRef = useRef(null);
 
-  // NEW: Staggered revenue configuration
+  // Get days in month for day selection
+  const getDaysInMonth = (year, month) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const [daysInMonth, setDaysInMonth] = useState(getDaysInMonth(startYear, startMonth));
+
+  // Update days in month when year or month changes
+  useEffect(() => {
+    const days = getDaysInMonth(startYear, startMonth);
+    setDaysInMonth(days);
+    if (startDay > days) {
+      setStartDay(1);
+    }
+  }, [startYear, startMonth]);
+
+  // Staggered revenue configuration
   const revenueConfig = {
     landingPeriod: 2, // months for each buffalo
     highRevenuePhase: { months: 5, revenue: 9000 }, // 5 months of high revenue
@@ -28,7 +45,7 @@ export default function BuffaloFamilyTree() {
     restPeriod: { months: 4, revenue: 0 } // 4 months rest
   };
 
-  // NEW: Calculate monthly revenue for EACH buffalo based on its individual cycle
+  // Calculate monthly revenue for EACH buffalo based on its individual cycle
   const calculateMonthlyRevenueForBuffalo = (buffaloId, acquisitionMonth, currentYear, currentMonth) => {
     // Each buffalo starts its cycle from its acquisition month
     const monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
@@ -50,7 +67,7 @@ export default function BuffaloFamilyTree() {
     }
   };
 
-  // UPDATED: Calculate annual revenue for ALL mature buffaloes with individual cycles
+  // Calculate annual revenue for ALL mature buffaloes with individual cycles
   const calculateAnnualRevenueForHerd = (herd, startYear, startMonth, currentYear) => {
     let annualRevenue = 0;
     
@@ -82,7 +99,7 @@ export default function BuffaloFamilyTree() {
     };
   };
 
-  // UPDATED: Calculate total revenue data based on ACTUAL herd growth with staggered cycles
+  // Calculate total revenue data based on ACTUAL herd growth with staggered cycles
   const calculateRevenueData = (herd, startYear, startMonth, totalYears) => {
     const yearlyData = [];
     let totalRevenue = 0;
@@ -111,6 +128,7 @@ export default function BuffaloFamilyTree() {
         producingBuffaloes: matureBuffaloes,
         nonProducingBuffaloes: totalBuffaloes - matureBuffaloes,
         startMonth: monthNames[startMonth],
+        startDay: startDay,
         startYear: startYear,
         matureBuffaloes: matureBuffaloes
       });
@@ -126,7 +144,7 @@ export default function BuffaloFamilyTree() {
     };
   };
 
-  // UPDATED: Simulation logic with staggered acquisition months
+  // Simulation logic with staggered acquisition months
   const runSimulation = () => {
     setLoading(true);
     setTimeout(() => {
@@ -195,6 +213,7 @@ export default function BuffaloFamilyTree() {
         years,
         startYear,
         startMonth,
+        startDay,
         totalBuffaloes: herd.length,
         buffaloes: herd,
         revenueData: revenueData
@@ -213,6 +232,7 @@ export default function BuffaloFamilyTree() {
     setYears(10);
     setStartYear(2026);
     setStartMonth(0);
+    setStartDay(1);
     setZoom(1);
     setPosition({ x: 0, y: 0 });
     setShowCostEstimation(false);
@@ -288,6 +308,9 @@ export default function BuffaloFamilyTree() {
         setStartYear={setStartYear}
         startMonth={startMonth}
         setStartMonth={setStartMonth}
+        startDay={startDay}
+        setStartDay={setStartDay}
+        daysInMonth={daysInMonth}
         runSimulation={runSimulation}
         treeData={treeData}
         resetSimulation={resetSimulation}

@@ -83,9 +83,11 @@ const TreeVisualization = ({
           <div className="text-xl font-bold text-green-600">{treeData.years}</div>
           <div className="text-sm text-gray-600">Simulation Years</div>
         </div>
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-gray-200 min-w-[140px]">
-          <div className="text-xl font-bold text-purple-600">{monthNames[treeData.startMonth]}</div>
-          <div className="text-sm text-gray-600">Starting Month</div>
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-5 shadow-xl border border-gray-200 min-w-[160px]">
+          <div className="text-xl font-bold text-purple-600">
+            {monthNames[treeData.startMonth]} {treeData.startDay}, {treeData.startYear}
+          </div>
+          <div className="text-sm text-gray-600">Starting Date</div>
         </div>
         <div className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl p-5 shadow-xl text-white min-w-[160px]">
           <div className="text-2xl font-bold">{treeData.totalBuffaloes}</div>
@@ -135,7 +137,7 @@ const TreeVisualization = ({
                       Unit {founder.unit} - {getBuffaloDisplayName(founder)}
                     </h2>
                     <div className="text-sm text-gray-600 mb-2">
-                      Started: {monthNames[treeData.startMonth]} {treeData.startYear}
+                      Started: {monthNames[treeData.startMonth]} {treeData.startDay}, {treeData.startYear}
                     </div>
                     <div className="w-20 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 mx-auto rounded-full"></div>
                   </div>
@@ -160,6 +162,5 @@ const TreeVisualization = ({
     </div>
   );
 };
-
 
 export default TreeVisualization;

@@ -23,113 +23,22 @@ const CostEstimationTable = ({
       </div>
     );
   }
-  const [activeTab, SetActiveTab] = useState("Montly Revenue Break");
-
+  const [activeTab, SetActiveTab] = useState("Monthly Revenue Break");
+  const [cpfToggle, setCpfToggle] = useState("withCPF"); // "withCPF" or "withoutCPF"
 
   const { yearlyData, totalRevenue, totalUnits, totalMatureBuffaloYears } = treeData.revenueData;
   const monthNames = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
 
-  // Corrected Age-based buffalo pricing structure
-  const getBuffaloValueByAge = (ageInMonths) => {
-    if (ageInMonths >= 60) {
-      return 175000; // 5+ years (5th year) - Mother buffaloes
-    } else if (ageInMonths >= 48) {
-      return 150000; // 4+ years (5th year)
-    } else if (ageInMonths >= 40) {
-      return 100000; // After 40 months (4 years 1 month)
-    } else if (ageInMonths >= 36) {
-      return 50000; // 36-40 months
-    } else if (ageInMonths >= 30) {
-      return 50000; // 30-36 months
-    } else if (ageInMonths >= 24) {
-      return 35000; // 24-30 months
-    } else if (ageInMonths >= 18) {
-      return 25000; // 18-24 months
-    } else if (ageInMonths >= 12) {
-      return 12000; // 12-18 months
-    } else if (ageInMonths >= 6) {
-      return 6000; // 6-12 months
-    } else {
-      return 3000; // 0-6 months
-    }
-  };
 
-  const getBuffaloValueDescription = (ageInMonths) => {
-    if (ageInMonths >= 60) {
-      return "5+ years (Mother buffalo - ₹1,75,000)";
-    } else if (ageInMonths >= 48) {
-      return "4+ years (5th year - ₹1,50,000)";
-    } else if (ageInMonths >= 40) {
-      return "After 40 months (₹1,00,000)";
-    } else if (ageInMonths >= 36) {
-      return "36-40 months (₹50,000)";
-    } else if (ageInMonths >= 30) {
-      return "30-36 months (₹50,000)";
-    } else if (ageInMonths >= 24) {
-      return "24-30 months (₹35,000)";
-    } else if (ageInMonths >= 18) {
-      return "18-24 months (₹25,000)";
-    } else if (ageInMonths >= 12) {
-      return "12-18 months (₹12,000)";
-    } else if (ageInMonths >= 6) {
-      return "6-12 months (₹6,000)";
-    } else {
-      return "0-6 months (Calves - ₹3,000)";
-    }
-  };
-
-  // Investment and Asset Value Calculations
-  const MOTHER_BUFFALO_PRICE = 175000; // Correct: Price for mother buffaloes (5th year, 60 months)
-  const CPF_PER_UNIT = 13000;
-
-  // Calculate initial investment - 2 mother buffaloes @ ₹1.75 lakhs each + their 2 calves (included free)
-  const calculateInitialInvestment = () => {
-    const motherBuffaloCost = treeData.units * 2 * MOTHER_BUFFALO_PRICE; // 2 mother buffaloes per unit
-    const cpfCost = treeData.units * CPF_PER_UNIT;
-    return {
-      motherBuffaloCost,
-      cpfCost,
-      totalInvestment: motherBuffaloCost + cpfCost,
-      totalBuffaloesAtStart: treeData.units * 4, // 2 mothers + 2 calves per unit
-      motherBuffaloes: treeData.units * 2,
-      calvesAtStart: treeData.units * 2
-    };
-  };
-
-  const initialInvestment = calculateInitialInvestment();
-
-  // Enhanced monthly revenue calculation for each buffalo
-  const calculateMonthlyRevenueForBuffalo = (acquisitionMonth, currentMonth, currentYear, startYear) => {
-    const monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
-
-    if (monthsSinceAcquisition < 2) {
-      return 0; // Landing period
-    }
-
-    const productionMonth = monthsSinceAcquisition - 2;
-    const cycleMonth = productionMonth % 12;
-
-    if (cycleMonth < 5) {
-      return 9000; // High revenue phase
-    } else if (cycleMonth < 8) {
-      return 6000; // Medium revenue phase
-    } else {
-      return 0; // Rest period
-    }
-  };
-
-  // Calculate buffalo's age in months at a specific year and month
-  const calculateAgeInMonths = (buffalo, targetYear, targetMonth = 0) => {
+     const calculateAgeInMonths = (buffalo, targetYear, targetMonth = 0) => {
     const birthYear = buffalo.birthYear;
     const birthMonth = buffalo.birthMonth || 0; // January if not specified
 
     const totalMonths = (targetYear - birthYear) * 12 + (targetMonth - birthMonth);
     return Math.max(0, totalMonths);
   };
-
-  // Detailed buffalo tracking with IDs and relationships
-  const getBuffaloDetails = () => {
+    const getBuffaloDetails = () => {
     const buffaloDetails = {};
     let buffaloCounter = 1;
 
@@ -230,6 +139,248 @@ const CostEstimationTable = ({
     return buffaloDetails;
   };
 
+  // Calculate CPF cost for each year
+  const calculateYearlyCPFCost = () => {
+    const buffaloDetails = getBuffaloDetails();
+    const cpfCostByYear = {};
+
+    // For each year from startYear to startYear + years
+    for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
+      let totalCPFCost = 0;
+      
+      // For each unit
+      for (let unit = 1; unit <= treeData.units; unit++) {
+        let unitCPFCost = 0;
+        
+        // Get buffaloes for this unit
+        const unitBuffaloes = Object.values(buffaloDetails).filter(buffalo => buffalo.unit === unit);
+        
+        // Calculate CPF for each buffalo in this unit for this year
+        unitBuffaloes.forEach(buffalo => {
+          // M1 always has CPF (from the beginning)
+          if (buffalo.id === 'M1') {
+            unitCPFCost += 13000;
+          }
+          // M2 never has CPF
+          else if (buffalo.id === 'M2') {
+            // No CPF
+          }
+          // Children: Only have CPF after age 3 (36 months)
+          else if (buffalo.generation === 1 || buffalo.generation === 2) {
+            const ageInMonths = calculateAgeInMonths(buffalo, year, 11); // Age at end of year
+            if (ageInMonths >= 36) { // Age 3 years = 36 months
+              unitCPFCost += 13000;
+            }
+          }
+        });
+        
+        totalCPFCost += unitCPFCost;
+      }
+      
+      cpfCostByYear[year] = totalCPFCost;
+    }
+    
+    return cpfCostByYear;
+  };
+
+  const yearlyCPFCost = calculateYearlyCPFCost();
+
+  // Calculate yearly data with CPF
+  const calculateYearlyDataWithCPF = () => {
+    return yearlyData.map(yearData => {
+      const cpfCost = yearlyCPFCost[yearData.year] || 0;
+      const revenueWithoutCPF = yearData.revenue;
+      const revenueWithCPF = revenueWithoutCPF - cpfCost;
+      
+      return {
+        ...yearData,
+        cpfCost,
+        revenueWithoutCPF,
+        revenueWithCPF
+      };
+    });
+  };
+
+  const yearlyDataWithCPF = calculateYearlyDataWithCPF();
+
+  // Calculate cumulative revenue data with CPF
+  const calculateCumulativeRevenueData = () => {
+    const cumulativeData = [];
+    let cumulativeRevenueWithoutCPF = 0;
+    let cumulativeRevenueWithCPF = 0;
+    
+    yearlyDataWithCPF.forEach((yearData, index) => {
+      cumulativeRevenueWithoutCPF += yearData.revenueWithoutCPF;
+      cumulativeRevenueWithCPF += yearData.revenueWithCPF;
+      
+      cumulativeData.push({
+        ...yearData,
+        cumulativeRevenueWithoutCPF: cumulativeRevenueWithoutCPF,
+        cumulativeRevenueWithCPF: cumulativeRevenueWithCPF,
+        cumulativeCPFCost: cumulativeRevenueWithoutCPF - cumulativeRevenueWithCPF
+      });
+    });
+    
+    return cumulativeData;
+  };
+
+  const cumulativeYearlyData = calculateCumulativeRevenueData();
+
+  // Calculate cumulative revenue until a specific year for each buffalo
+  const calculateCumulativeRevenueUntilYear = (unit, selectedYear) => {
+    const buffaloDetails = getBuffaloDetails();
+    const unitBuffaloes = Object.values(buffaloDetails).filter(buffalo => buffalo.unit === unit);
+    const cumulativeRevenue = {};
+    
+    // Initialize revenue structure
+    const monthlyRevenue = {};
+    for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
+      monthlyRevenue[year] = {};
+      for (let month = 0; month < 12; month++) {
+        monthlyRevenue[year][month] = {
+          total: 0,
+          buffaloes: {}
+        };
+      }
+    }
+
+    // Calculate revenue for each buffalo
+    unitBuffaloes.forEach(buffalo => {
+      for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
+        if (year >= buffalo.birthYear + 3) { // Buffalo becomes productive at age 3
+          for (let month = 0; month < 12; month++) {
+            const revenue = calculateMonthlyRevenueForBuffalo(
+              buffalo.acquisitionMonth,
+              month,
+              year,
+              treeData.startYear
+            );
+            if (revenue > 0) {
+              monthlyRevenue[year][month].buffaloes[buffalo.id] = revenue;
+            }
+          }
+        }
+      }
+    });
+
+    // Calculate cumulative revenue for each buffalo until selected year
+    unitBuffaloes.forEach(buffalo => {
+      let total = 0;
+      for (let year = treeData.startYear; year <= selectedYear; year++) {
+        for (let month = 0; month < 12; month++) {
+          total += monthlyRevenue[year]?.[month]?.buffaloes[buffalo.id] || 0;
+        }
+      }
+      cumulativeRevenue[buffalo.id] = total;
+    });
+    
+    return cumulativeRevenue;
+  };
+
+  // Calculate total cumulative revenue until selected year
+  const calculateTotalCumulativeRevenueUntilYear = (unit, selectedYear) => {
+    const cumulativeRevenue = calculateCumulativeRevenueUntilYear(unit, selectedYear);
+    return Object.values(cumulativeRevenue).reduce((sum, revenue) => sum + revenue, 0);
+  };
+
+  // Corrected Age-based buffalo pricing structure
+  const getBuffaloValueByAge = (ageInMonths) => {
+    if (ageInMonths >= 60) {
+      return 175000; // 5+ years (5th year) - Mother buffaloes
+    } else if (ageInMonths >= 48) {
+      return 150000; // 4+ years (5th year)
+    } else if (ageInMonths >= 40) {
+      return 100000; // After 40 months (4 years 1 month)
+    } else if (ageInMonths >= 36) {
+      return 50000; // 36-40 months
+    } else if (ageInMonths >= 30) {
+      return 50000; // 30-36 months
+    } else if (ageInMonths >= 24) {
+      return 35000; // 24-30 months
+    } else if (ageInMonths >= 18) {
+      return 25000; // 18-24 months
+    } else if (ageInMonths >= 12) {
+      return 12000; // 12-18 months
+    } else if (ageInMonths >= 6) {
+      return 6000; // 6-12 months
+    } else {
+      return 3000; // 0-6 months
+    }
+  };
+
+  const getBuffaloValueDescription = (ageInMonths) => {
+    if (ageInMonths >= 60) {
+      return "5+ years (Mother buffalo - ₹1,75,000)";
+    } else if (ageInMonths >= 48) {
+      return "4+ years (5th year - ₹1,50,000)";
+    } else if (ageInMonths >= 40) {
+      return "After 40 months (₹1,00,000)";
+    } else if (ageInMonths >= 36) {
+      return "36-40 months (₹50,000)";
+    } else if (ageInMonths >= 30) {
+      return "30-36 months (₹50,000)";
+    } else if (ageInMonths >= 24) {
+      return "24-30 months (₹35,000)";
+    } else if (ageInMonths >= 18) {
+      return "18-24 months (₹25,000)";
+    } else if (ageInMonths >= 12) {
+      return "12-18 months (₹12,000)";
+    } else if (ageInMonths >= 6) {
+      return "6-12 months (₹6,000)";
+    } else {
+      return "0-6 months (Calves - ₹3,000)";
+    }
+  };
+
+  // Investment and Asset Value Calculations
+  const MOTHER_BUFFALO_PRICE = 175000; // Correct: Price for mother buffaloes (5th year, 60 months)
+  const CPF_PER_UNIT = 13000; // CPF for ONE unit (covers both M1 and M2)
+
+  // CORRECTED: Calculate initial investment - 2 mother buffaloes @ ₹1.75 lakhs each + their 2 calves (included free)
+  // CPF is only ₹13,000 for the entire unit (not per buffalo)
+  const calculateInitialInvestment = () => {
+    const motherBuffaloCost = treeData.units * 2 * MOTHER_BUFFALO_PRICE; // 2 mother buffaloes per unit @ ₹1.75L each
+    const cpfCost = treeData.units * CPF_PER_UNIT; // Only ₹13,000 per unit (not per buffalo)
+    return {
+      motherBuffaloCost,
+      cpfCost,
+      totalInvestment: motherBuffaloCost + cpfCost,
+      totalBuffaloesAtStart: treeData.units * 4, // 2 mothers + 2 calves per unit
+      motherBuffaloes: treeData.units * 2,
+      calvesAtStart: treeData.units * 2,
+      pricePerMotherBuffalo: MOTHER_BUFFALO_PRICE,
+      cpfPerUnit: CPF_PER_UNIT
+    };
+  };
+
+  const initialInvestment = calculateInitialInvestment();
+
+  // Enhanced monthly revenue calculation for each buffalo
+  const calculateMonthlyRevenueForBuffalo = (acquisitionMonth, currentMonth, currentYear, startYear) => {
+    const monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
+
+    if (monthsSinceAcquisition < 2) {
+      return 0; // Landing period
+    }
+
+    const productionMonth = monthsSinceAcquisition - 2;
+    const cycleMonth = productionMonth % 12;
+
+    if (cycleMonth < 5) {
+      return 9000; // High revenue phase
+    } else if (cycleMonth < 8) {
+      return 6000; // Medium revenue phase
+    } else {
+      return 0; // Rest period
+    }
+  };
+
+  // Calculate buffalo's age in months at a specific year and month
+ 
+
+  // Detailed buffalo tracking with IDs and relationships
+  
+
   // Calculate detailed monthly revenue for all buffaloes
   const calculateDetailedMonthlyRevenue = () => {
     const buffaloDetails = getBuffaloDetails();
@@ -292,37 +443,115 @@ const CostEstimationTable = ({
 
   const { monthlyRevenue, investorMonthlyRevenue, buffaloDetails, buffaloValuesByYear } = calculateDetailedMonthlyRevenue();
 
-  // Calculate Revenue Break-Even Analysis with monthly precision
+  // Calculate Revenue Break-Even Analysis with exact date - UPDATED FOR BOTH WITH AND WITHOUT CPF
   const calculateBreakEvenAnalysis = () => {
-    let cumulativeRevenue = 0;
+    let cumulativeRevenueWithoutCPF = 0;
+    let cumulativeRevenueWithCPF = 0;
     const breakEvenData = [];
-    let breakEvenYear = null;
-    let breakEvenMonth = null;
+    let breakEvenYearWithoutCPF = null;
+    let breakEvenMonthWithoutCPF = null;
+    let breakEvenYearWithCPF = null;
+    let breakEvenMonthWithCPF = null;
+    let exactBreakEvenDateWithoutCPF = null;
+    let exactBreakEvenDateWithCPF = null;
 
-    // Check monthly break-even
+    // Check monthly break-even for WITHOUT CPF
     for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
       for (let month = 0; month < 12; month++) {
-        cumulativeRevenue += investorMonthlyRevenue[year][month];
+        cumulativeRevenueWithoutCPF += investorMonthlyRevenue[year][month];
 
-        if (cumulativeRevenue >= initialInvestment.totalInvestment && !breakEvenYear) {
-          breakEvenYear = year;
-          breakEvenMonth = month;
-          break;
+        if (cumulativeRevenueWithoutCPF >= initialInvestment.totalInvestment && !breakEvenYearWithoutCPF) {
+          breakEvenYearWithoutCPF = year;
+          breakEvenMonthWithoutCPF = month;
+          
+          // Calculate the exact date by adding months to the start date
+          const startDate = new Date(treeData.startYear, treeData.startMonth, treeData.startDay || 1);
+          const monthsSinceStart = (year - treeData.startYear) * 12 + (month - treeData.startMonth);
+          const breakEvenDate = new Date(startDate);
+          breakEvenDate.setMonth(breakEvenDate.getMonth() + monthsSinceStart);
+          
+          // Set to last day of month since revenue is received monthly
+          const lastDayOfMonth = new Date(breakEvenDate.getFullYear(), breakEvenDate.getMonth() + 1, 0).getDate();
+          breakEvenDate.setDate(lastDayOfMonth);
+          
+          exactBreakEvenDateWithoutCPF = breakEvenDate;
         }
       }
-      if (breakEvenYear) break;
+      if (breakEvenYearWithoutCPF) break;
+    }
+
+    // Reset and check monthly break-even for WITH CPF
+    let tempCumulativeWithCPF = 0;
+    for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
+      const annualCPFCost = yearlyCPFCost[year] || 0;
+      for (let month = 0; month < 12; month++) {
+        tempCumulativeWithCPF += investorMonthlyRevenue[year][month];
+        // Subtract CPF cost proportionally (1/12 of annual CPF each month)
+        tempCumulativeWithCPF -= (annualCPFCost / 12);
+
+        if (tempCumulativeWithCPF >= initialInvestment.totalInvestment && !breakEvenYearWithCPF) {
+          breakEvenYearWithCPF = year;
+          breakEvenMonthWithCPF = month;
+          
+          // Calculate the exact date by adding months to the start date
+          const startDate = new Date(treeData.startYear, treeData.startMonth, treeData.startDay || 1);
+          const monthsSinceStart = (year - treeData.startYear) * 12 + (month - treeData.startMonth);
+          const breakEvenDate = new Date(startDate);
+          breakEvenDate.setMonth(breakEvenDate.getMonth() + monthsSinceStart);
+          
+          // Set to last day of month since revenue is received monthly
+          const lastDayOfMonth = new Date(breakEvenDate.getFullYear(), breakEvenDate.getMonth() + 1, 0).getDate();
+          breakEvenDate.setDate(lastDayOfMonth);
+          
+          exactBreakEvenDateWithCPF = breakEvenDate;
+        }
+      }
+      if (breakEvenYearWithCPF) break;
     }
 
     // Yearly break-even data for table
-    for (let i = 0; i < yearlyData.length; i++) {
-      const yearData = yearlyData[i];
-      const yearCumulative = yearlyData.slice(0, i + 1).reduce((sum, item) => sum + item.revenue, 0);
+    let yearlyCumulativeWithoutCPF = 0;
+    let yearlyCumulativeWithCPF = 0;
+    
+    for (let i = 0; i < cumulativeYearlyData.length; i++) {
+      const yearData = cumulativeYearlyData[i];
+      yearlyCumulativeWithoutCPF = yearData.cumulativeRevenueWithoutCPF;
+      yearlyCumulativeWithCPF = yearData.cumulativeRevenueWithCPF;
+      
+      const recoveryPercentageWithoutCPF = (yearlyCumulativeWithoutCPF / initialInvestment.totalInvestment) * 100;
+      const recoveryPercentageWithCPF = (yearlyCumulativeWithCPF / initialInvestment.totalInvestment) * 100;
+      
+      let statusWithoutCPF = "in Progress";
+      if (recoveryPercentageWithoutCPF >= 100) {
+        statusWithoutCPF = "✔ Break-Even";
+      } else if (recoveryPercentageWithoutCPF >= 75) {
+        statusWithoutCPF = "75% Recovered";
+      } else if (recoveryPercentageWithoutCPF >= 50) {
+        statusWithoutCPF = "50% Recovered";
+      }
+
+      let statusWithCPF = "in Progress";
+      if (recoveryPercentageWithCPF >= 100) {
+        statusWithCPF = "✔ Break-Even";
+      } else if (recoveryPercentageWithCPF >= 75) {
+        statusWithCPF = "75% Recovered";
+      } else if (recoveryPercentageWithCPF >= 50) {
+        statusWithCPF = "50% Recovered";
+      }
 
       breakEvenData.push({
         year: yearData.year,
-        annualRevenue: yearData.revenue,
-        cumulativeRevenue: yearCumulative,
-        isBreakEven: breakEvenYear === yearData.year,
+        annualRevenueWithoutCPF: yearData.revenueWithoutCPF,
+        annualRevenueWithCPF: yearData.revenueWithCPF,
+        cpfCost: yearData.cpfCost,
+        cumulativeRevenueWithoutCPF: yearlyCumulativeWithoutCPF,
+        cumulativeRevenueWithCPF: yearlyCumulativeWithCPF,
+        recoveryPercentageWithoutCPF: recoveryPercentageWithoutCPF,
+        recoveryPercentageWithCPF: recoveryPercentageWithCPF,
+        statusWithoutCPF: statusWithoutCPF,
+        statusWithCPF: statusWithCPF,
+        isBreakEvenWithoutCPF: breakEvenYearWithoutCPF === yearData.year,
+        isBreakEvenWithCPF: breakEvenYearWithCPF === yearData.year,
         totalBuffaloes: yearData.totalBuffaloes,
         matureBuffaloes: yearData.matureBuffaloes
       });
@@ -330,27 +559,44 @@ const CostEstimationTable = ({
 
     return {
       breakEvenData,
-      breakEvenYear,
-      breakEvenMonth,
+      breakEvenYearWithoutCPF,
+      breakEvenMonthWithoutCPF,
+      breakEvenYearWithCPF,
+      breakEvenMonthWithCPF,
+      exactBreakEvenDateWithoutCPF,
+      exactBreakEvenDateWithCPF,
       initialInvestment: initialInvestment.totalInvestment,
-      finalCumulativeRevenue: cumulativeRevenue
+      finalCumulativeRevenueWithoutCPF: cumulativeYearlyData[cumulativeYearlyData.length - 1]?.cumulativeRevenueWithoutCPF || 0,
+      finalCumulativeRevenueWithCPF: cumulativeYearlyData[cumulativeYearlyData.length - 1]?.cumulativeRevenueWithCPF || 0
     };
   };
 
   const breakEvenAnalysis = calculateBreakEvenAnalysis();
 
-  // Calculate Asset Market Value based on age-based pricing
+  // Calculate Asset Market Value based on age-based pricing - UPDATED to show only until 2035
   const calculateAssetMarketValue = () => {
     const assetValues = [];
+    
+    // For 10 years from 2026 to 2035
+    const endYear = treeData.startYear + 9; // 2026 + 9 = 2035
 
-    // Calculate asset value for each year
-    for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
+    // Calculate asset value for each year from startYear to endYear
+    for (let year = treeData.startYear; year <= endYear; year++) {
       let totalAssetValue = 0;
-      let motherBuffaloes = 0;
-      let fiveYearBuffaloes = 0;
-      let after40MonthBuffaloes = 0;
-      let growingBuffaloes = 0;
-      let calfBuffaloes = 0;
+      
+      // Count buffaloes by age category
+      const ageCategories = {
+        '0-6 months': { count: 0, value: 0 },
+        '6-12 months': { count: 0, value: 0 },
+        '12-18 months': { count: 0, value: 0 },
+        '18-24 months': { count: 0, value: 0 },
+        '24-30 months': { count: 0, value: 0 },
+        '30-36 months': { count: 0, value: 0 },
+        '36-40 months': { count: 0, value: 0 },
+        '40-48 months': { count: 0, value: 0 },
+        '48-60 months': { count: 0, value: 0 },
+        '60+ months (Mother Buffalo)': { count: 0, value: 0 }
+      };
 
       // Sum values of all buffaloes alive in this year
       Object.values(buffaloDetails).forEach(buffalo => {
@@ -359,18 +605,37 @@ const CostEstimationTable = ({
           const value = getBuffaloValueByAge(ageInMonths);
           totalAssetValue += value;
 
-          if (buffalo.generation === 0) {
-            motherBuffaloes++; // Original mother buffaloes
-          }
-
+          // Categorize by age
           if (ageInMonths >= 60) {
-            fiveYearBuffaloes++;
+            ageCategories['60+ months (Mother Buffalo)'].count++;
+            ageCategories['60+ months (Mother Buffalo)'].value += value;
+          } else if (ageInMonths >= 48) {
+            ageCategories['48-60 months'].count++;
+            ageCategories['48-60 months'].value += value;
           } else if (ageInMonths >= 40) {
-            after40MonthBuffaloes++;
+            ageCategories['40-48 months'].count++;
+            ageCategories['40-48 months'].value += value;
+          } else if (ageInMonths >= 36) {
+            ageCategories['36-40 months'].count++;
+            ageCategories['36-40 months'].value += value;
+          } else if (ageInMonths >= 30) {
+            ageCategories['30-36 months'].count++;
+            ageCategories['30-36 months'].value += value;
+          } else if (ageInMonths >= 24) {
+            ageCategories['24-30 months'].count++;
+            ageCategories['24-30 months'].value += value;
+          } else if (ageInMonths >= 18) {
+            ageCategories['18-24 months'].count++;
+            ageCategories['18-24 months'].value += value;
           } else if (ageInMonths >= 12) {
-            growingBuffaloes++;
+            ageCategories['12-18 months'].count++;
+            ageCategories['12-18 months'].value += value;
+          } else if (ageInMonths >= 6) {
+            ageCategories['6-12 months'].count++;
+            ageCategories['6-12 months'].value += value;
           } else {
-            calfBuffaloes++;
+            ageCategories['0-6 months'].count++;
+            ageCategories['0-6 months'].value += value;
           }
         }
       });
@@ -380,12 +645,10 @@ const CostEstimationTable = ({
       assetValues.push({
         year: year,
         totalBuffaloes: yearData?.totalBuffaloes || 0,
-        motherBuffaloes: motherBuffaloes,
-        fiveYearBuffaloes: fiveYearBuffaloes,
-        after40MonthBuffaloes: after40MonthBuffaloes,
-        growingBuffaloes: growingBuffaloes,
-        calfBuffaloes: calfBuffaloes,
-        totalAssetValue: totalAssetValue
+        ageCategories: ageCategories,
+        totalAssetValue: totalAssetValue,
+        // Also include mother buffaloes count (60+ months)
+        motherBuffaloes: ageCategories['60+ months (Mother Buffalo)'].count
       });
     }
 
@@ -549,7 +812,7 @@ const CostEstimationTable = ({
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className="w-full p-3 xl:p-2 border border-purple-300 rounded-xl xl:text-sm"
             >
-              {Array.from({ length: treeData.years + 1 }, (_, i) => (
+              {Array.from({ length: 10 }, (_, i) => (
                 <option key={i} value={treeData.startYear + i}>
                   {treeData.startYear + i} (Year {i + 1})
                 </option>
@@ -680,23 +943,94 @@ const CostEstimationTable = ({
         return hasRevenue;
       });
 
-    // Calculate CPF cost for milk-producing buffaloes
+    // CORRECTED: Calculate CPF cost for milk-producing buffaloes
+    // Only M1 has CPF initially. Children get CPF after they become mature (age >= 3 years)
     const calculateCPFCost = () => {
-      // Count milk-producing buffaloes (age >= 3 and generating revenue)
-      const milkProducingBuffaloes = unitBuffaloes.length;
+      let milkProducingBuffaloesWithCPF = 0;
+      const buffaloCPFDetails = [];
 
-      // CPF cost: ₹13,000 per milk-producing buffalo per year
-      const annualCPFCost = milkProducingBuffaloes * 13000;
+      unitBuffaloes.forEach(buffalo => {
+        // M1 has CPF (it's the buffalo that comes with CPF)
+        if (buffalo.id === 'M1') {
+          milkProducingBuffaloesWithCPF++;
+          buffaloCPFDetails.push({ id: buffalo.id, hasCPF: true, reason: 'M1 (Comes with CPF)' });
+        }
+        // M2 does NOT have CPF (free buffalo without CPF)
+        else if (buffalo.id === 'M2') {
+          buffaloCPFDetails.push({ id: buffalo.id, hasCPF: false, reason: 'M2 (No CPF)' });
+        }
+        // Children: Only have CPF after they become mature (age >= 3 years)
+        else if (buffalo.generation === 1 || buffalo.generation === 2) {
+          const ageInMonths = calculateAgeInMonths(buffalo, selectedYear, 11);
+          const hasCPF = ageInMonths >= 36; // Age 3 years = 36 months
+          if (hasCPF) {
+            milkProducingBuffaloesWithCPF++;
+          }
+          buffaloCPFDetails.push({ 
+            id: buffalo.id, 
+            hasCPF: hasCPF, 
+            reason: hasCPF ? 'Child (Age ≥ 3 years)' : 'Child (Age < 3 years, no CPF)' 
+          });
+        }
+      });
+
+      // CPF cost: ₹13,000 per buffalo that qualifies for CPF
+      const annualCPFCost = milkProducingBuffaloesWithCPF * 13000;
       const monthlyCPFCost = annualCPFCost / 12;
 
       return {
-        milkProducingBuffaloes,
+        milkProducingBuffaloes: unitBuffaloes.length,
+        milkProducingBuffaloesWithCPF,
         annualCPFCost,
-        monthlyCPFCost: Math.round(monthlyCPFCost)
+        monthlyCPFCost: Math.round(monthlyCPFCost),
+        buffaloCPFDetails
       };
     };
 
     const cpfCost = calculateCPFCost();
+    
+    // Calculate cumulative revenue until selected year for each buffalo
+    const cumulativeRevenueUntilYear = calculateCumulativeRevenueUntilYear(selectedUnit, selectedYear);
+    const totalCumulativeUntilYear = calculateTotalCumulativeRevenueUntilYear(selectedUnit, selectedYear);
+
+    // Calculate CPF cumulative cost until selected year
+    const calculateCumulativeCPFCost = () => {
+      let totalCPFUntilYear = 0;
+      
+      // For each year from start to selected year
+      for (let year = treeData.startYear; year <= selectedYear; year++) {
+        // Get unit buffaloes that existed in this year
+        const buffaloesInYear = Object.values(buffaloDetails)
+          .filter(buffalo => buffalo.unit === selectedUnit && year >= buffalo.birthYear);
+        
+        // Count CPF-qualifying buffaloes for this year
+        let cpfCount = 0;
+        buffaloesInYear.forEach(buffalo => {
+          // M1 always has CPF (from the beginning)
+          if (buffalo.id === 'M1') {
+            cpfCount++;
+          }
+          // M2 never has CPF
+          else if (buffalo.id === 'M2') {
+            // No CPF
+          }
+          // Children: Only have CPF after age 3
+          else if (buffalo.generation === 1 || buffalo.generation === 2) {
+            const ageInMonths = calculateAgeInMonths(buffalo, year, 11);
+            if (ageInMonths >= 36) { // Age 3 years = 36 months
+              cpfCount++;
+            }
+          }
+        });
+        
+        totalCPFUntilYear += cpfCount * 13000;
+      }
+      
+      return totalCPFUntilYear;
+    };
+
+    const cumulativeCPFCost = calculateCumulativeCPFCost();
+    const cumulativeNetRevenue = totalCumulativeUntilYear - cumulativeCPFCost;
 
     // Download Excel function
     const downloadExcel = () => {
@@ -708,7 +1042,7 @@ const CostEstimationTable = ({
       unitBuffaloes.forEach(buffalo => {
         csvContent += buffalo.id + ",";
       });
-      csvContent += "Unit Total,CPF Cost,Net Revenue\n";
+      csvContent += "Unit Total,CPF Cost,Net Revenue,Cumulative Revenue Until " + selectedYear + "\n";
 
       // Monthly data
       monthNames.forEach((month, monthIndex) => {
@@ -723,7 +1057,7 @@ const CostEstimationTable = ({
           const revenue = monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0;
           csvContent += revenue + ",";
         });
-        csvContent += unitTotal + "," + cpfCost.monthlyCPFCost + "," + netRevenue + "\n";
+        csvContent += unitTotal + "," + cpfCost.monthlyCPFCost + "," + netRevenue + "," + totalCumulativeUntilYear + "\n";
       });
 
       // Yearly totals
@@ -742,7 +1076,7 @@ const CostEstimationTable = ({
         }, 0);
         csvContent += yearlyTotal + ",";
       });
-      csvContent += yearlyUnitTotal + "," + cpfCost.annualCPFCost + "," + yearlyNetRevenue + "\n";
+      csvContent += yearlyUnitTotal + "," + cpfCost.annualCPFCost + "," + yearlyNetRevenue + "," + totalCumulativeUntilYear + "\n";
 
       // Create and download file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -773,7 +1107,7 @@ const CostEstimationTable = ({
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className="w-full p-3 border border-blue-300 rounded-xl xl:text-sm  xl:p-1 xl:w-1/2"
             >
-              {Array.from({ length: treeData.years + 1 }, (_, i) => (
+              {Array.from({ length: 10 }, (_, i) => (
                 <option key={i} value={treeData.startYear + i}>
                   {treeData.startYear + i}
                 </option>
@@ -808,17 +1142,31 @@ const CostEstimationTable = ({
           </div>
         </div>
 
-        {/* CPF Cost Summary */}
+        {/* Cumulative Revenue Summary */}
+        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl p-6 text-white text-center mb-8">
+          <div className="text-2xl font-bold mb-2 xl:text-lg">
+            Cumulative Revenue Until {selectedYear}: {formatCurrency(totalCumulativeUntilYear)}
+          </div>
+          <div className="text-lg xl:text-base opacity-90">
+            Total revenue generated by Unit {selectedUnit} from {treeData.startYear} to {selectedYear}
+          </div>
+        </div>
+
+        {/* CPF Cost Summary - CORRECTED */}
         <div className='grid grid-cols-1 xl:grid-cols-2 gap-6'>
           <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-6 text-white text-center mb-8">
             <div className="text-2xl font-bold mb-2 xl:text-sm">
-              CPF (Cattle Protection Fund) - ₹13,000 per Milk-Producing Buffalo
+              CPF (Cattle Protection Fund) - ₹13,000 per Buffalo with CPF
             </div>
             <div className="text-lg xl:text-base opacity-90">
-              {cpfCost.milkProducingBuffaloes} milk-producing buffaloes × ₹13,000 = {formatCurrency(cpfCost.annualCPFCost)} annually
+              {cpfCost.milkProducingBuffaloesWithCPF} buffaloes with CPF × ₹13,000 = {formatCurrency(cpfCost.annualCPFCost)} annually
             </div>
             <div className="text-sm opacity-80 mt-2">
-              Monthly CPF Cost: {formatCurrency(cpfCost.monthlyCPFCost)} | Net Revenue = Total Revenue - CPF Cost
+              Monthly CPF Cost: {formatCurrency(cpfCost.monthlyCPFCost)} | 
+              Cumulative CPF Until {selectedYear}: {formatCurrency(cumulativeCPFCost)}
+            </div>
+            <div className="text-xs opacity-70 mt-2">
+              Note: M1 has CPF, M2 has no CPF. Children get CPF only after age 3.
             </div>
           </div>
           {/* Income Producing Buffaloes Summary */}
@@ -829,10 +1177,40 @@ const CostEstimationTable = ({
             <div className="text-lg xl:text-sm opacity-90 ">
               Unit {selectedUnit} | Showing only buffaloes generating revenue (age 3+ years)
             </div>
+            <div className="text-sm opacity-80 mt-2">
+              Cumulative Net Revenue Until {selectedYear}: {formatCurrency(cumulativeNetRevenue)}
+            </div>
           </div>
         </div>
 
-
+        {/* CPF Details */}
+        <div className="bg-white rounded-2xl p-6 border border-yellow-200 mb-8">
+          <h3 className="text-xl font-bold text-yellow-700 mb-4 text-center">CPF Eligibility Details (Per Unit Basis)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-yellow-50 p-4 rounded-lg">
+              <div className="font-bold text-yellow-700">Buffaloes WITH CPF (₹13,000 each):</div>
+              <ul className="list-disc pl-5 text-sm text-yellow-600 mt-2">
+                <li>M1 (First Mother Buffalo) - Has CPF included</li>
+                <li>Children after they reach 3 years of age (36 months)</li>
+              </ul>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg">
+              <div className="font-bold text-green-700">Buffaloes WITHOUT CPF:</div>
+              <ul className="list-disc pl-5 text-sm text-green-600 mt-2">
+                <li>M2 (Second Mother Buffalo) - No CPF (free CPF offer)</li>
+                <li>Children before they reach 3 years of age</li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <div className="text-sm text-blue-700 font-semibold">Important Note:</div>
+            <div className="text-xs text-blue-600">
+              Each unit (2 mother buffaloes) comes with ONE CPF coverage (₹13,000). 
+              The CPF covers M1 only. M2 gets free CPF coverage. 
+              Additional CPF is required for children when they reach 3 years of age.
+            </div>
+          </div>
+        </div>
 
         {/* Monthly Revenue Table */}
         {unitBuffaloes.length > 0 ? (
@@ -958,12 +1336,39 @@ const CostEstimationTable = ({
                       }, 0) - cpfCost.annualCPFCost)}
                     </td>
                   </tr>
+                  
+                  {/* Cumulative Revenue Row */}
+                  <tr className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                    <td className="text-center font-bold text-xl xl:text-lg border-r-2 border-blue-400">
+                      Cumulative Until {selectedYear}
+                    </td>
+                    {unitBuffaloes.map((buffalo, buffaloIndex) => {
+                      return (
+                        <td
+                          key={buffalo.id}
+                          className="px-3 py-3 text-center font-bold text-lg border-r-2 border-blue-400"
+                          style={{ borderRight: buffaloIndex === unitBuffaloes.length - 1 ? '2px solid #3b82f6' : '1px solid #60a5fa' }}
+                        >
+                          {formatCurrency(cumulativeRevenueUntilYear[buffalo.id] || 0)}
+                        </td>
+                      );
+                    })}
+                    <td className="text-center font-bold text-lg border-r-2 border-blue-400 bg-blue-700">
+                      {formatCurrency(totalCumulativeUntilYear)}
+                    </td>
+                    <td className="text-center font-bold text-lg border-r-2 border-blue-400 bg-orange-700">
+                      {formatCurrency(cumulativeCPFCost)}
+                    </td>
+                    <td className="text-center font-bold text-lg bg-green-700">
+                      {formatCurrency(cumulativeNetRevenue)}
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
 
             {/* Summary Section */}
-            <div className="mt-5  grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="mt-5  grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-blue-50 rounded-xl p-6 xl:p-3 border border-blue-200 text-center">
                 <div className="text-2xl font-bold text-blue-600 mb-2 xl:mb-1">
                   {formatCurrency(unitBuffaloes.reduce((sum, buffalo) => {
@@ -972,7 +1377,7 @@ const CostEstimationTable = ({
                     }, 0);
                   }, 0))}
                 </div>
-                <div className="text-lg font-semibold text-blue-700">Total Annual Revenue</div>
+                <div className="text-lg font-semibold text-blue-700">Annual Revenue {selectedYear}</div>
               </div>
 
               <div className="bg-orange-50 rounded-xl p-6 border border-orange-200 text-center">
@@ -981,7 +1386,7 @@ const CostEstimationTable = ({
                 </div>
                 <div className="text-lg font-semibold text-orange-700">Annual CPF Cost</div>
                 <div className="text-sm text-orange-600 mt-1">
-                  {cpfCost.milkProducingBuffaloes} buffaloes × ₹13,000
+                  {cpfCost.milkProducingBuffaloesWithCPF} buffaloes × ₹13,000
                 </div>
               </div>
 
@@ -994,6 +1399,13 @@ const CostEstimationTable = ({
                   }, 0) - cpfCost.annualCPFCost)}
                 </div>
                 <div className="text-lg font-semibold text-green-700">Net Annual Revenue</div>
+              </div>
+
+              <div className="bg-purple-50 rounded-xl p-6 border border-purple-200 text-center">
+                <div className="text-2xl font-bold text-purple-600 mb-2">
+                  {formatCurrency(cumulativeNetRevenue)}
+                </div>
+                <div className="text-lg font-semibold text-purple-700">Cumulative Net Until {selectedYear}</div>
               </div>
             </div>
           </div>
@@ -1010,164 +1422,317 @@ const CostEstimationTable = ({
             </div>
           </div>
         )}
+
+        {/* Dynamic Calculation Note */}
+        <div className="bg-gradient-to-r from-blue-50 to-cyan-100 rounded-xl p-5 mt-6 border border-blue-300">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="text-2xl">⚡</div>
+            <div className="text-lg font-bold text-blue-800">Dynamic Revenue Calculation</div>
+          </div>
+          <p className="text-blue-700 text-sm">
+            These revenue figures are calculated <span className="font-semibold">dynamically</span> based on:
+            <span className="block mt-1 ml-4">
+              1. Each buffalo's specific age and production cycle<br/>
+              2. Natural reproduction patterns<br/>
+              3. CPF costs that vary with age<br/>
+              4. Realistic monthly production variations
+            </span>
+          </p>
+        </div>
       </div>
     );
   };
 
-  // Revenue Break-Even Analysis Component
-  const RevenueBreakEvenAnalysis = () => (
-    <div className="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-3xl p-10 shadow-2xl border border-purple-200 mb-16">
-      <h2 className="text-4xl font-bold text-purple-800 mb-10 text-center flex items-center justify-center gap-4">
-        <span className="text-5xl">💰</span>
-        Revenue Break-Even Analysis
-      </h2>
+  // Revenue Break-Even Analysis Component - UPDATED FOR BOTH WITH AND WITHOUT CPF
+  const RevenueBreakEvenAnalysis = () => {
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"];
+    
+    // Calculate months to break-even
+    const calculateMonthsToBreakEven = (breakEvenDate) => {
+      if (!breakEvenDate) return null;
+      
+      const startDate = new Date(treeData.startYear, treeData.startMonth, treeData.startDay || 1);
+      const yearsDiff = breakEvenDate.getFullYear() - startDate.getFullYear();
+      const monthsDiff = breakEvenDate.getMonth() - startDate.getMonth();
+      
+      return yearsDiff * 12 + monthsDiff;
+    };
 
-      {/* Initial Investment Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-        <div className="bg-white rounded-2xl p-8 border border-blue-200 shadow-lg text-center">
-          <div className="text-3xl font-bold text-blue-600 mb-4">
-            {formatCurrency(initialInvestment.motherBuffaloCost)}
-          </div>
-          <div className="text-lg font-semibold text-blue-700">Mother Buffaloes (60 months old)</div>
-          <div className="text-sm text-gray-600 mt-2">
-            {treeData.units} units × 2 mothers × ₹1.75 Lakhs
-            <br />
-            {initialInvestment.motherBuffaloes} mother buffaloes @ ₹1.75 Lakhs each
+    const monthsToBreakEvenWithoutCPF = calculateMonthsToBreakEven(breakEvenAnalysis.exactBreakEvenDateWithoutCPF);
+    const monthsToBreakEvenWithCPF = calculateMonthsToBreakEven(breakEvenAnalysis.exactBreakEvenDateWithCPF);
+    
+    return (
+      <div className="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-3xl p-10 shadow-2xl border border-purple-200 mb-16">
+        <h2 className="text-4xl font-bold text-purple-800 mb-10 text-center flex items-center justify-center gap-4">
+          <span className="text-5xl">💰</span>
+          Revenue Break-Even Analysis (With & Without CPF)
+        </h2>
+
+        {/* CPF Toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white rounded-2xl p-4 border border-purple-300">
+            <div className="text-lg font-semibold text-purple-700 mb-2 text-center">Select CPF Mode:</div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setCpfToggle("withCPF")}
+                className={`px-6 py-3 rounded-xl font-bold transition-all ${cpfToggle === "withCPF" ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                With CPF
+              </button>
+              <button
+                onClick={() => setCpfToggle("withoutCPF")}
+                className={`px-6 py-3 rounded-xl font-bold transition-all ${cpfToggle === "withoutCPF" ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                Without CPF
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-8 border border-green-200 shadow-lg text-center">
-          <div className="text-3xl font-bold text-green-600 mb-4">
-            {formatCurrency(initialInvestment.cpfCost)}
+        {/* Initial Investment Breakdown - CORRECTED */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          <div className="bg-white rounded-2xl p-8 border border-blue-200 shadow-lg text-center">
+            <div className="text-3xl font-bold text-blue-600 mb-4">
+              {formatCurrency(initialInvestment.motherBuffaloCost)}
+            </div>
+            <div className="text-lg font-semibold text-blue-700">Mother Buffaloes (60 months old)</div>
+            <div className="text-sm text-gray-600 mt-2">
+              {treeData.units} units × 2 mothers × ₹1.75 Lakhs
+              <br />
+              {initialInvestment.motherBuffaloes} mother buffaloes @ ₹1.75 Lakhs each
+              <br />
+              Total: 2 × ₹1.75L = ₹3.5L per unit
+            </div>
           </div>
-          <div className="text-lg font-semibold text-green-700">CPF Cost</div>
-          <div className="text-sm text-gray-600 mt-2">
-            {treeData.units} units × ₹13,000
-            <br />
-            Annual cattle protection fund
+
+          <div className="bg-white rounded-2xl p-8 border border-green-200 shadow-lg text-center">
+            <div className="text-3xl font-bold text-green-600 mb-4">
+              {formatCurrency(initialInvestment.cpfCost)}
+            </div>
+            <div className="text-lg font-semibold text-green-700">CPF Cost (One CPF per Unit)</div>
+            <div className="text-sm text-gray-600 mt-2">
+              {treeData.units} units × ₹13,000
+              <br />
+              One CPF covers both M1 and M2 in each unit
+              <br />
+              M1 has CPF, M2 gets free CPF coverage
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-8 text-white shadow-lg text-center">
+            <div className="text-3xl font-bold mb-4">
+              {formatCurrency(initialInvestment.totalInvestment)}
+            </div>
+            <div className="text-lg font-semibold opacity-90">Total Initial Investment</div>
+            <div className="text-sm opacity-80 mt-2">
+              Includes {initialInvestment.totalBuffaloesAtStart} buffaloes (2 mothers + 2 calves per unit)
+              <br />
+              Plus one CPF coverage for each unit
+            </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-8 text-white shadow-lg text-center">
-          <div className="text-3xl font-bold mb-4">
-            {formatCurrency(initialInvestment.totalInvestment)}
+        {/* Starting Buffalo Summary */}
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-8 text-white text-center shadow-2xl mb-8">
+          <div className="text-2xl font-bold mb-4">Starting Buffaloes (Included in Initial Purchase)</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+              <div className="text-3xl font-bold">{initialInvestment.motherBuffaloes}</div>
+              <div className="text-lg font-semibold">Mother Buffaloes (60 months)</div>
+              <div className="text-sm opacity-90">5th year @ ₹1.75 Lakhs each</div>
+            </div>
+            <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+              <div className="text-3xl font-bold">{initialInvestment.calvesAtStart}</div>
+              <div className="text-lg font-semibold">Newborn Calves</div>
+              <div className="text-sm opacity-90">Included free with mothers</div>
+            </div>
+            <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+              <div className="text-3xl font-bold">{treeData.units}</div>
+              <div className="text-lg font-semibold">CPF Coverage</div>
+              <div className="text-sm opacity-90">One CPF per unit (covers M1 & M2)</div>
+            </div>
           </div>
-          <div className="text-lg font-semibold opacity-90">Total Initial Investment</div>
+        </div>
+
+        {/* CPF Offer Explanation */}
+        <div className="bg-gradient-to-r from-yellow-500 to-orange-600 rounded-2xl p-6 text-white text-center shadow-2xl mb-8">
+          <div className="text-2xl font-bold mb-4">🎁 Special CPF Offer</div>
+          <div className="text-lg opacity-90">
+            For each unit (2 mother buffaloes), you get ONE CPF coverage (₹13,000) that covers both M1 and M2
+          </div>
           <div className="text-sm opacity-80 mt-2">
-            Includes {initialInvestment.totalBuffaloesAtStart} buffaloes (2 mothers + 2 calves per unit)
+            Regular price: 2 CPF × ₹13,000 = ₹26,000 | Our offer: ₹13,000 (Save ₹13,000!)
           </div>
         </div>
-      </div>
 
-      {/* Starting Buffalo Summary */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-8 text-white text-center shadow-2xl mb-8">
-        <div className="text-2xl font-bold mb-4">Starting Buffaloes (Included in Initial Purchase)</div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
-            <div className="text-3xl font-bold">{initialInvestment.motherBuffaloes}</div>
-            <div className="text-lg font-semibold">Mother Buffaloes (60 months)</div>
-            <div className="text-sm opacity-90">5th year @ ₹1.75 Lakhs each</div>
-          </div>
-          <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
-            <div className="text-3xl font-bold">{initialInvestment.calvesAtStart}</div>
-            <div className="text-lg font-semibold">Newborn Calves</div>
-            <div className="text-sm opacity-90">Included free with mothers</div>
-          </div>
+        {/* Break-Even Results - Show Both */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          {/* Without CPF Break-Even */}
+          {breakEvenAnalysis.breakEvenYearWithoutCPF && breakEvenAnalysis.exactBreakEvenDateWithoutCPF && (
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-8 text-white text-center shadow-2xl">
+              <div className="text-3xl font-bold mb-4">📊 Break-Even WITHOUT CPF</div>
+              <div className="text-2xl font-semibold mb-2">
+                {breakEvenAnalysis.exactBreakEvenDateWithoutCPF.toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </div>
+              <div className="text-lg opacity-90 mb-4">
+                📈 Cumulative Revenue: {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithoutCPF)}
+              </div>
+              <div className="text-sm opacity-80">
+                Investment recovered in {monthsToBreakEvenWithoutCPF} months 
+                ({Math.floor(monthsToBreakEvenWithoutCPF/12)} years {monthsToBreakEvenWithoutCPF%12} months)
+              </div>
+            </div>
+          )}
+
+          {/* With CPF Break-Even */}
+          {breakEvenAnalysis.breakEvenYearWithCPF && breakEvenAnalysis.exactBreakEvenDateWithCPF && (
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-8 text-white text-center shadow-2xl">
+              <div className="text-3xl font-bold mb-4">🎉 Break-Even WITH CPF</div>
+              <div className="text-2xl font-semibold mb-2">
+                {breakEvenAnalysis.exactBreakEvenDateWithCPF.toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </div>
+              <div className="text-lg opacity-90 mb-4">
+                📈 Net Cumulative Revenue: {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithCPF)}
+              </div>
+              <div className="text-sm opacity-80">
+                Investment recovered in {monthsToBreakEvenWithCPF} months 
+                ({Math.floor(monthsToBreakEvenWithCPF/12)} years {monthsToBreakEvenWithCPF%12} months)
+              </div>
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* Break-Even Result */}
-      {breakEvenAnalysis.breakEvenYear && (
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-8 text-white text-center shadow-2xl mb-8">
-          <div className="text-4xl font-bold mb-4">🎉 Break-Even Achieved!</div>
-          <div className="text-2xl font-semibold">
-            Year {breakEvenAnalysis.breakEvenYear} ({breakEvenAnalysis.breakEvenMonth ? `Month ${breakEvenAnalysis.breakEvenMonth + 1}` : 'Full Year'})
-          </div>
-          <div className="text-lg opacity-90 mt-2">
-            Cumulative Revenue: {formatCurrency(breakEvenAnalysis.finalCumulativeRevenue)}
-          </div>
-        </div>
-      )}
+        {/* Break-Even Timeline */}
+        <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg">
+          <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+            Break-Even Timeline {cpfToggle === "withCPF" ? "(With CPF)" : "(Without CPF)"}
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-gray-50 to-blue-50">
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Year</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">
+                    {cpfToggle === "withCPF" ? "Annual Revenue (Net)" : "Annual Revenue (Gross)"}
+                  </th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">
+                    {cpfToggle === "withCPF" ? "Cumulative (Net)" : "Cumulative (Gross)"}
+                  </th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Investment Recovery</th>
+                </tr>
+              </thead>
+              <tbody>
+                {breakEvenAnalysis.breakEvenData.map((data, index) => {
+                  const annualRevenue = cpfToggle === "withCPF" ? data.annualRevenueWithCPF : data.annualRevenueWithoutCPF;
+                  const cumulativeRevenue = cpfToggle === "withCPF" ? data.cumulativeRevenueWithCPF : data.cumulativeRevenueWithoutCPF;
+                  const recoveryPercentage = cpfToggle === "withCPF" ? data.recoveryPercentageWithCPF : data.recoveryPercentageWithoutCPF;
+                  const status = cpfToggle === "withCPF" ? data.statusWithCPF : data.statusWithoutCPF;
+                  const isBreakEven = cpfToggle === "withCPF" ? data.isBreakEvenWithCPF : data.isBreakEvenWithoutCPF;
 
-      {/* Break-Even Timeline */}
-      <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg">
-        <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Break-Even Timeline</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gradient-to-r from-gray-50 to-blue-50">
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Year</th>
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Annual Revenue</th>
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Cumulative Revenue</th>
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Investment Recovery</th>
-              </tr>
-            </thead>
-            <tbody>
-              {breakEvenAnalysis.breakEvenData.map((data, index) => {
-                const recoveryPercentage = (data.cumulativeRevenue / initialInvestment.totalInvestment) * 100;
-                return (
-                  <tr key={data.year} className="hover:bg-blue-50 transition-colors">
-                    <td className="px-6 py-4 border-b">
-                      <div className="font-semibold text-gray-900">{data.year}</div>
-                      <div className="text-sm text-gray-600">Year {index + 1}</div>
-                    </td>
-                    <td className="px-6 py-4 border-b font-semibold text-green-600">
-                      {formatCurrency(data.annualRevenue)}
-                    </td>
-                    <td className="px-6 py-4 border-b font-semibold text-blue-600">
-                      {formatCurrency(data.cumulativeRevenue)}
-                    </td>
-                    <td className="px-6 py-4 border-b">
-                      <div className="flex items-center gap-3">
-                        <div className="w-full bg-gray-200 rounded-full h-4">
-                          <div
-                            className={`h-4 rounded-full ${recoveryPercentage >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
-                            style={{ width: `${Math.min(recoveryPercentage, 100)}%` }}
-                          ></div>
+                  return (
+                    <tr key={data.year} className="hover:bg-blue-50 transition-colors">
+                      <td className="px-6 py-4 border-b">
+                        <div className="font-semibold text-gray-900">{data.year}</div>
+                        <div className="text-sm text-gray-600">Year {index + 1}</div>
+                      </td>
+                      <td className="px-6 py-4 border-b font-semibold text-green-600">
+                        {formatCurrency(annualRevenue)}
+                        {cpfToggle === "withCPF" && (
+                          <div className="text-xs text-gray-500">
+                            CPF: -{formatCurrency(data.cpfCost)}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 border-b font-semibold text-blue-600">
+                        {formatCurrency(cumulativeRevenue)}
+                      </td>
+                      <td className="px-6 py-4 border-b">
+                        <div className="flex items-center gap-3">
+                          <div className="w-full bg-gray-200 rounded-full h-4">
+                            <div
+                              className={`h-4 rounded-full ${recoveryPercentage >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                              style={{ width: `${Math.min(recoveryPercentage, 100)}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-sm font-semibold text-gray-600 min-w-[60px]">
+                            {recoveryPercentage.toFixed(1)}%
+                          </div>
                         </div>
-                        <div className="text-sm font-semibold text-gray-600 min-w-[60px]">
-                          {recoveryPercentage.toFixed(1)}%
-                        </div>
-                      </div>
-                      {data.isBreakEven ? (
-                        <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold mt-2 inline-block">
-                          ✓ Break-Even
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold mt-2 inline-block
+                          ${status.includes('Break-Even') ? 'bg-green-100 text-green-800' :
+                            status.includes('75%') ? 'bg-yellow-100 text-yellow-800' :
+                            status.includes('50%') ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-600'}`}>
+                          {status}
                         </span>
-                      ) : recoveryPercentage >= 75 ? (
-                        <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold mt-2 inline-block">
-                          75% Recovered
-                        </span>
-                      ) : recoveryPercentage >= 50 ? (
-                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold mt-2 inline-block">
-                          50% Recovered
-                        </span>
-                      ) : (
-                        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm mt-2 inline-block">
-                          In Progress
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Dynamic Revenue Note */}
+        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-200 mt-8">
+          <div className="flex items-start gap-4">
+            <div className="text-3xl">📊</div>
+            <div>
+              <h4 className="text-xl font-bold text-blue-800 mb-2">Dynamic Revenue Calculation</h4>
+              <p className="text-blue-700">
+                All revenue values are calculated <span className="font-semibold">dynamically</span> based on:
+              </p>
+              <ul className="list-disc pl-5 text-blue-600 mt-2 space-y-1">
+                <li>Actual herd growth through natural reproduction</li>
+                <li>Staggered birthing cycles (every 12 months)</li>
+                <li>Age-based milk production (starts at 3 years)</li>
+                <li>Seasonal production cycles (5 months high, 3 months medium, 4 months rest)</li>
+                <li>Variable CPF costs based on buffalo age</li>
+              </ul>
+              <div className="bg-blue-100 rounded-lg p-4 mt-4">
+                <div className="font-semibold text-blue-800">💡 Note:</div>
+                <div className="text-blue-700 text-sm">
+                  {cpfToggle === "withCPF" ? (
+                    <>
+                      The net cumulative revenue of {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithCPF)} at break-even 
+                      represents <span className="font-bold">actual projected milk sales minus CPF costs</span>.
+                    </>
+                  ) : (
+                    <>
+                      The gross cumulative revenue of {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithoutCPF)} at break-even 
+                      represents <span className="font-bold">total milk sales before CPF deductions</span>.
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  // Asset Market Value Component
+  // Asset Market Value Component - UPDATED to show only until 2035
   const AssetMarketValue = () => {
-    const [selectedYear, setSelectedYear] = useState(treeData.startYear + treeData.years);
+    const [selectedYear, setSelectedYear] = useState(treeData.startYear);
     const detailedAssetValue = calculateDetailedAssetValue(selectedYear);
-    const selectedAssetValue = assetMarketValue.find(a => a.year === selectedYear) || assetMarketValue[assetMarketValue.length - 1];
+    const selectedAssetValue = assetMarketValue.find(a => a.year === selectedYear) || assetMarketValue[0];
 
     return (
       <div className="bg-gradient-to-br from-orange-50 to-red-100 rounded-3xl p-10 shadow-2xl border border-orange-200 mb-16">
         <h2 className="text-4xl font-bold text-orange-800 mb-10 text-center flex items-center justify-center gap-4">
           <span className="text-5xl">🏦</span>
-          Asset Market Value Analysis
+          Asset Market Value Analysis (2026-2035)
         </h2>
 
         {/* Year Selection and Summary */}
@@ -1194,7 +1759,88 @@ const CostEstimationTable = ({
             <div className="text-4xl font-bold mb-2">{formatCurrency(selectedAssetValue?.totalAssetValue || 0)}</div>
             <div className="text-lg opacity-90">
               {selectedAssetValue?.totalBuffaloes || 0} buffaloes
+              <br />
+              Including {selectedAssetValue?.motherBuffaloes || 0} mother buffaloes (60+ months)
             </div>
+          </div>
+        </div>
+
+        {/* Detailed Age Category Table */}
+        <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg mb-8">
+          <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+            Detailed Age-Based Asset Breakdown - {selectedYear}
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-gray-50 to-orange-50">
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Age Category</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Unit Value</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Count</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Value</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">% of Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { category: '0-6 months', unitValue: 3000 },
+                  { category: '6-12 months', unitValue: 6000 },
+                  { category: '12-18 months', unitValue: 12000 },
+                  { category: '18-24 months', unitValue: 25000 },
+                  { category: '24-30 months', unitValue: 35000 },
+                  { category: '30-36 months', unitValue: 50000 },
+                  { category: '36-40 months', unitValue: 50000 },
+                  { category: '40-48 months', unitValue: 100000 },
+                  { category: '48-60 months', unitValue: 150000 },
+                  { category: '60+ months (Mother Buffalo)', unitValue: 175000 }
+                ].map((item, index) => {
+                  const count = selectedAssetValue?.ageCategories?.[item.category]?.count || 0;
+                  const value = selectedAssetValue?.ageCategories?.[item.category]?.value || 0;
+                  const percentage = selectedAssetValue?.totalAssetValue > 0 
+                    ? (value / selectedAssetValue.totalAssetValue * 100).toFixed(1) 
+                    : 0;
+                  
+                  return (
+                    <tr key={index} className="hover:bg-orange-50 transition-colors">
+                      <td className="px-6 py-4 border-b">
+                        <div className="font-semibold text-gray-900">{item.category}</div>
+                      </td>
+                      <td className="px-6 py-4 border-b font-semibold text-blue-600">
+                        {formatCurrency(item.unitValue)}
+                      </td>
+                      <td className="px-6 py-4 border-b font-semibold text-purple-600">
+                        {count}
+                      </td>
+                      <td className="px-6 py-4 border-b font-semibold text-green-600">
+                        {formatCurrency(value)}
+                      </td>
+                      <td className="px-6 py-4 border-b">
+                        <div className="flex items-center gap-3">
+                          <div className="w-full bg-gray-200 rounded-sm h-4">
+                            <div
+                              className="bg-orange-500 h-4 rounded-full"
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-sm font-semibold text-gray-600 min-w-[50px]">
+                            {percentage}%
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
+                  <td className="px-6 py-4 font-bold">Total</td>
+                  <td className="px-6 py-4 font-bold">-</td>
+                  <td className="px-6 py-4 font-bold">{selectedAssetValue?.totalBuffaloes || 0}</td>
+                  <td className="px-6 py-4 font-bold">{formatCurrency(selectedAssetValue?.totalAssetValue || 0)}</td>
+                  <td className="px-6 py-4 font-bold">100%</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </div>
 
@@ -1204,11 +1850,13 @@ const CostEstimationTable = ({
             <div className="text-3xl font-bold text-blue-600 mb-4">
               {formatCurrency(assetMarketValue[0]?.totalAssetValue || 0)}
             </div>
-            <div className="text-lg font-semibold text-blue-700">Initial Asset Value</div>
+            <div className="text-lg font-semibold text-blue-700">Initial Asset Value (2026)</div>
             <div className="text-sm text-gray-600 mt-2">
               {assetMarketValue[0]?.totalBuffaloes || 0} buffaloes
               <br />
-              2 mothers (60 months, ₹1.75L each) + 2 calves (newborn, ₹3k each)
+              {assetMarketValue[0]?.motherBuffaloes || 0} mother buffaloes (60+ months)
+              <br />
+              {assetMarketValue[0]?.ageCategories?.['0-6 months']?.count || 0} newborn calves
             </div>
           </div>
 
@@ -1216,9 +1864,11 @@ const CostEstimationTable = ({
             <div className="text-3xl font-bold mb-4">
               {formatCurrency(assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0)}
             </div>
-            <div className="text-lg font-semibold opacity-90">Final Asset Value</div>
+            <div className="text-lg font-semibold opacity-90">Final Asset Value (2035)</div>
             <div className="text-sm opacity-80 mt-2">
               {assetMarketValue[assetMarketValue.length - 1]?.totalBuffaloes || 0} buffaloes
+              <br />
+              {assetMarketValue[assetMarketValue.length - 1]?.motherBuffaloes || 0} mother buffaloes (60+ months)
               <br />
               Multiple generations with age-based valuation
             </div>
@@ -1238,17 +1888,16 @@ const CostEstimationTable = ({
           </div>
         </div>
 
-        {/* Yearly Asset Value Table */}
+        {/* Yearly Asset Value Table (2026-2035) */}
         <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg">
-          <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Yearly Asset Market Value</h3>
+          <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Yearly Asset Market Value (2026-2035)</h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-gray-50 to-orange-50">
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Year</th>
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Buffaloes</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Mother Buffaloes</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">60+ months (₹1.75L)</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Mother Buffaloes (60+ months)</th>
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Calves (0-6m)</th>
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Asset Value</th>
                 </tr>
@@ -1266,14 +1915,11 @@ const CostEstimationTable = ({
                     <td className="px-6 py-4 border-b font-semibold text-purple-600">
                       {formatNumber(data.totalBuffaloes)}
                     </td>
-                    <td className="px-6 py-4 border-b font-semibold text-blue-600">
+                    <td className="px-6 py-4 border-b font-semibold text-red-600">
                       {formatNumber(data.motherBuffaloes)}
                     </td>
-                    <td className="px-6 py-4 border-b font-semibold text-red-600">
-                      {formatNumber(data.fiveYearBuffaloes)}
-                    </td>
                     <td className="px-6 py-4 border-b font-semibold text-green-600">
-                      {formatNumber(data.calfBuffaloes)}
+                      {formatNumber(data.ageCategories?.['0-6 months']?.count || 0)}
                     </td>
                     <td className="px-6 py-4 border-b font-semibold text-orange-600">
                       {formatCurrency(data.totalAssetValue)}
@@ -1284,12 +1930,520 @@ const CostEstimationTable = ({
             </table>
           </div>
         </div>
+
+        {/* Investment Recovery Status */}
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-8 text-white text-center shadow-2xl mt-8">
+          <div className="text-3xl font-bold mb-4">🎯 Your Investment is Now Risk-Free!</div>
+          <div className="text-xl opacity-90 mb-6">
+            At break-even point, your initial investment is fully recovered
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+              <div className="text-2xl font-bold mb-2">
+                {formatCurrency(initialInvestment.totalInvestment)}
+              </div>
+              <div className="text-lg">Initial Investment</div>
+            </div>
+            <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+              <div className="text-2xl font-bold mb-2">
+                {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithCPF)}
+              </div>
+              <div className="text-lg">Net Cumulative Revenue at Break-Even</div>
+            </div>
+            <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+              <div className="text-2xl font-bold mb-2">
+                {formatCurrency(assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0)}
+              </div>
+              <div className="text-lg">Final Asset Value (2035)</div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
 
-  // Quick Stats Card Component
+  // Break-Even Timeline Component with Exact Date Calculation - UPDATED FOR BOTH WITH AND WITHOUT CPF
+  const BreakEvenTimeline = () => {
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"];
+    
+    // Calculate months to break-even
+    const calculateMonthsToBreakEven = (breakEvenDate) => {
+      if (!breakEvenDate) return null;
+      
+      const startDate = new Date(treeData.startYear, treeData.startMonth, treeData.startDay || 1);
+      const yearsDiff = breakEvenDate.getFullYear() - startDate.getFullYear();
+      const monthsDiff = breakEvenDate.getMonth() - startDate.getMonth();
+      
+      return yearsDiff * 12 + monthsDiff;
+    };
 
+    const monthsToBreakEvenWithoutCPF = calculateMonthsToBreakEven(breakEvenAnalysis.exactBreakEvenDateWithoutCPF);
+    const monthsToBreakEvenWithCPF = calculateMonthsToBreakEven(breakEvenAnalysis.exactBreakEvenDateWithCPF);
+
+    return (
+      <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-3xl p-10 shadow-2xl border border-green-200 mb-16">
+        <h2 className="text-4xl font-bold text-green-800 mb-10 text-center flex items-center justify-center gap-4">
+          <span className="text-5xl">🎯</span>
+          Break-Even Timeline Analysis (2026-2035)
+        </h2>
+
+        {/* CPF Toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white rounded-2xl p-4 border border-purple-300">
+            <div className="text-lg font-semibold text-purple-700 mb-2 text-center">Select CPF Mode:</div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setCpfToggle("withCPF")}
+                className={`px-6 py-3 rounded-xl font-bold transition-all ${cpfToggle === "withCPF" ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                With CPF
+              </button>
+              <button
+                onClick={() => setCpfToggle("withoutCPF")}
+                className={`px-6 py-3 rounded-xl font-bold transition-all ${cpfToggle === "withoutCPF" ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                Without CPF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Initial Investment Summary */}
+        <div className="bg-white rounded-2xl p-8 border border-green-200 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800 mb-2">Start Date</div>
+              <div className="text-3xl font-bold text-green-600">
+                {monthNames[treeData.startMonth]} {treeData.startDay || 1}, {treeData.startYear}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800 mb-2">Initial Investment</div>
+              <div className="text-3xl font-bold text-red-600">
+                {formatCurrency(breakEvenAnalysis.initialInvestment)}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800 mb-2">Units</div>
+              <div className="text-3xl font-bold text-blue-600">{treeData.units}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-800 mb-2">Projection Period</div>
+              <div className="text-3xl font-bold text-purple-600">2026-2035</div>
+            </div>
+          </div>
+        </div>
+
+        {/* CPF Offer Explanation */}
+        <div className="bg-gradient-to-r from-yellow-500 to-orange-600 rounded-2xl p-6 text-white text-center shadow-2xl mb-8">
+          <div className="text-xl font-bold mb-2">💰 Special CPF Offer</div>
+          <div className="text-lg opacity-90">
+            Each unit (2 mother buffaloes) comes with ONE CPF coverage (₹13,000) that covers both buffaloes
+          </div>
+          <div className="text-sm opacity-80 mt-2">
+            Regular: ₹26,000 (2 × ₹13,000) | Our offer: ₹13,000 (Save 50%!)
+          </div>
+        </div>
+
+        {/* Break-Even Achievement - Show Based on Toggle */}
+        {cpfToggle === "withCPF" ? (
+          // With CPF Break-Even
+          breakEvenAnalysis.exactBreakEvenDateWithCPF && (
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-10 text-white text-center shadow-2xl mb-8">
+              <div className="text-5xl mb-6">🎉</div>
+              <div className="text-4xl font-bold mb-4">Your Investment is Now Risk-Free!</div>
+              <div className="text-2xl font-semibold mb-6">
+                Break-Even WITH CPF Achieved on {breakEvenAnalysis.exactBreakEvenDateWithCPF.toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </div>
+              
+              <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm mb-6">
+                <div className="text-3xl font-bold mb-2">
+                  In Just {monthsToBreakEvenWithCPF} Months
+                </div>
+                <div className="text-xl opacity-90">
+                  ({Math.floor(monthsToBreakEvenWithCPF/12)} years and {monthsToBreakEvenWithCPF%12} months)
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
+                  <div className="text-lg font-semibold mb-2">Investment Cycle</div>
+                  <div className="text-2xl font-bold">
+                    Year {breakEvenAnalysis.exactBreakEvenDateWithCPF.getFullYear() - treeData.startYear + 1}
+                  </div>
+                  <div className="text-sm opacity-90">Month {breakEvenAnalysis.breakEvenMonthWithCPF + 1}</div>
+                </div>
+                
+                <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
+                  <div className="text-lg font-semibold mb-2">Net Cumulative Revenue</div>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithCPF)}
+                  </div>
+                  <div className="text-sm opacity-90">Total net milk sales to date</div>
+                </div>
+                
+                <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
+                  <div className="text-lg font-semibold mb-2">Initial Investment</div>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(breakEvenAnalysis.initialInvestment)}
+                  </div>
+                  <div className="text-sm opacity-90">Fully recovered!</div>
+                </div>
+              </div>
+              
+              <div className="text-lg opacity-90 bg-black/20 rounded-xl p-4">
+                🎯 <span className="font-semibold">What this means:</span> From this date forward, all future revenue is pure profit. 
+                Your initial investment of {formatCurrency(breakEvenAnalysis.initialInvestment)} has been completely recovered 
+                through milk sales after CPF deductions. The buffalo herd you own now represents 100% net asset value.
+              </div>
+            </div>
+          )
+        ) : (
+          // Without CPF Break-Even
+          breakEvenAnalysis.exactBreakEvenDateWithoutCPF && (
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-10 text-white text-center shadow-2xl mb-8">
+              <div className="text-5xl mb-6">📊</div>
+              <div className="text-4xl font-bold mb-4">Break-Even WITHOUT CPF</div>
+              <div className="text-2xl font-semibold mb-6">
+                Achieved on {breakEvenAnalysis.exactBreakEvenDateWithoutCPF.toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </div>
+              
+              <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm mb-6">
+                <div className="text-3xl font-bold mb-2">
+                  In Just {monthsToBreakEvenWithoutCPF} Months
+                </div>
+                <div className="text-xl opacity-90">
+                  ({Math.floor(monthsToBreakEvenWithoutCPF/12)} years and {monthsToBreakEvenWithoutCPF%12} months)
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
+                  <div className="text-lg font-semibold mb-2">Investment Cycle</div>
+                  <div className="text-2xl font-bold">
+                    Year {breakEvenAnalysis.exactBreakEvenDateWithoutCPF.getFullYear() - treeData.startYear + 1}
+                  </div>
+                  <div className="text-sm opacity-90">Month {breakEvenAnalysis.breakEvenMonthWithoutCPF + 1}</div>
+                </div>
+                
+                <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
+                  <div className="text-lg font-semibold mb-2">Gross Cumulative Revenue</div>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithoutCPF)}
+                  </div>
+                  <div className="text-sm opacity-90">Total milk sales before CPF</div>
+                </div>
+                
+                <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
+                  <div className="text-lg font-semibold mb-2">Initial Investment</div>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(breakEvenAnalysis.initialInvestment)}
+                  </div>
+                  <div className="text-sm opacity-90">Fully recovered!</div>
+                </div>
+              </div>
+              
+              <div className="text-lg opacity-90 bg-black/20 rounded-xl p-4">
+                🎯 <span className="font-semibold">What this means:</span> From this date forward, all future revenue exceeds your initial investment. 
+                Your initial investment of {formatCurrency(breakEvenAnalysis.initialInvestment)} has been completely recovered 
+                through milk sales alone (before CPF deductions).
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Break-Even Details */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <div className="bg-white rounded-2xl p-8 border border-blue-200">
+            <h3 className="text-2xl font-bold text-blue-700 mb-6 text-center">Break-Even Timeline</h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-semibold text-gray-700">Start Date:</span>
+                <span className="text-xl font-bold text-blue-600">
+                  {monthNames[treeData.startMonth]} {treeData.startDay || 1}, {treeData.startYear}
+                </span>
+              </div>
+              {cpfToggle === "withCPF" ? (
+                breakEvenAnalysis.exactBreakEvenDateWithCPF && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold text-gray-700">Break-Even Date (With CPF):</span>
+                      <span className="text-xl font-bold text-green-600">
+                        {breakEvenAnalysis.exactBreakEvenDateWithCPF.toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold text-gray-700">Time to Break-Even:</span>
+                      <span className="text-xl font-bold text-purple-600">
+                        {monthsToBreakEvenWithCPF} months ({Math.floor(monthsToBreakEvenWithCPF/12)} years {monthsToBreakEvenWithCPF%12} months)
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold text-gray-700">Net Cumulative Revenue at Break-Even:</span>
+                      <span className="text-xl font-bold text-red-600">
+                        {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithCPF)}
+                      </span>
+                    </div>
+                  </>
+                )
+              ) : (
+                breakEvenAnalysis.exactBreakEvenDateWithoutCPF && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold text-gray-700">Break-Even Date (Without CPF):</span>
+                      <span className="text-xl font-bold text-green-600">
+                        {breakEvenAnalysis.exactBreakEvenDateWithoutCPF.toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold text-gray-700">Time to Break-Even:</span>
+                      <span className="text-xl font-bold text-purple-600">
+                        {monthsToBreakEvenWithoutCPF} months ({Math.floor(monthsToBreakEvenWithoutCPF/12)} years {monthsToBreakEvenWithoutCPF%12} months)
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold text-gray-700">Gross Cumulative Revenue at Break-Even:</span>
+                      <span className="text-xl font-bold text-red-600">
+                        {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithoutCPF)}
+                      </span>
+                    </div>
+                  </>
+                )
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-8 border border-purple-200">
+            <h3 className="text-2xl font-bold text-purple-700 mb-6 text-center">Investment Recovery Progress</h3>
+            <div className="space-y-6">
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="font-semibold text-gray-700">Initial Investment:</span>
+                  <span className="font-bold text-red-600">
+                    {formatCurrency(breakEvenAnalysis.initialInvestment)}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4">
+                  <div className="bg-red-500 h-4 rounded-full" style={{ width: '100%' }}></div>
+                </div>
+              </div>
+              {cpfToggle === "withCPF" ? (
+                breakEvenAnalysis.exactBreakEvenDateWithCPF && (
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="font-semibold text-gray-700">Recovered at Break-Even (Net):</span>
+                      <span className="font-bold text-green-600">
+                        {formatCurrency(breakEvenAnalysis.initialInvestment)} (100%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-4">
+                      <div className="bg-green-500 h-4 rounded-full" style={{ width: '100%' }}></div>
+                    </div>
+                  </div>
+                )
+              ) : (
+                breakEvenAnalysis.exactBreakEvenDateWithoutCPF && (
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="font-semibold text-gray-700">Recovered at Break-Even (Gross):</span>
+                      <span className="font-bold text-blue-600">
+                        {formatCurrency(breakEvenAnalysis.initialInvestment)} (100%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-4">
+                      <div className="bg-blue-500 h-4 rounded-full" style={{ width: '100%' }}></div>
+                    </div>
+                  </div>
+                )
+              )}
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="font-semibold text-gray-700">Final Cumulative Revenue:</span>
+                  <span className="font-bold text-purple-600">
+                    {formatCurrency(cpfToggle === "withCPF" ? breakEvenAnalysis.finalCumulativeRevenueWithCPF : breakEvenAnalysis.finalCumulativeRevenueWithoutCPF)}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4">
+                  <div 
+                    className="bg-purple-500 h-4 rounded-full" 
+                    style={{ 
+                      width: `${Math.min(100, ((cpfToggle === "withCPF" ? breakEvenAnalysis.finalCumulativeRevenueWithCPF : breakEvenAnalysis.finalCumulativeRevenueWithoutCPF) / breakEvenAnalysis.initialInvestment) * 100)}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Break-Even Timeline Table (Matching Screenshot) */}
+        <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg">
+          <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+            Break-Even Timeline (2026-2035) - {cpfToggle === "withCPF" ? "With CPF" : "Without CPF"}
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-gray-50 to-green-50">
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Year</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">
+                    {cpfToggle === "withCPF" ? "Annual Revenue (Net)" : "Annual Revenue (Gross)"}
+                  </th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">
+                    {cpfToggle === "withCPF" ? "Cumulative (Net)" : "Cumulative (Gross)"}
+                  </th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Investment Recovery</th>
+                </tr>
+              </thead>
+              <tbody>
+                {breakEvenAnalysis.breakEvenData.map((data, index) => {
+                  const annualRevenue = cpfToggle === "withCPF" ? data.annualRevenueWithCPF : data.annualRevenueWithoutCPF;
+                  const cumulativeRevenue = cpfToggle === "withCPF" ? data.cumulativeRevenueWithCPF : data.cumulativeRevenueWithoutCPF;
+                  const recoveryPercentage = cpfToggle === "withCPF" ? data.recoveryPercentageWithCPF : data.recoveryPercentageWithoutCPF;
+                  const status = cpfToggle === "withCPF" ? data.statusWithCPF : data.statusWithoutCPF;
+                  const isBreakEven = cpfToggle === "withCPF" ? data.isBreakEvenWithCPF : data.isBreakEvenWithoutCPF;
+
+                  // Format year display
+                  const yearDisplay = data.year === treeData.startYear 
+                    ? `${data.year}\nYear 1` 
+                    : `${data.year}\nYear ${index + 1}`;
+
+                  return (
+                    <tr key={data.year} className="hover:bg-green-50 transition-colors">
+                      <td className="px-6 py-4 border-b">
+                        <div className="font-semibold text-gray-900 whitespace-pre-line">{yearDisplay}</div>
+                      </td>
+                      <td className="px-6 py-4 border-b font-semibold text-green-600">
+                        {formatCurrency(annualRevenue)}
+                        {cpfToggle === "withCPF" && (
+                          <div className="text-xs text-gray-500">
+                            CPF: -{formatCurrency(data.cpfCost)}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 border-b font-semibold text-blue-600">
+                        {formatCurrency(cumulativeRevenue)}
+                      </td>
+                      <td className="px-6 py-4 border-b">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-full bg-gray-200 rounded-sm h-4">
+                            <div
+                              className={`h-4 rounded-full ${recoveryPercentage >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                              style={{ width: `${Math.min(recoveryPercentage, 100)}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-sm font-semibold text-gray-600 min-w-[60px]">
+                            {recoveryPercentage.toFixed(1)}%
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold inline-block
+                          ${status.includes('Break-Even') ? 'bg-green-100 text-green-800' :
+                            status.includes('75%') ? 'bg-yellow-100 text-yellow-800' :
+                            status.includes('50%') ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-600'}`}>
+                          {status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Cumulative Revenue Explanation */}
+        <div className="bg-white rounded-2xl p-6 border border-purple-200 mt-8">
+          <h4 className="text-2xl font-bold text-purple-800 mb-4">Understanding Your Cumulative Revenue</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-purple-50 rounded-xl p-5">
+              <div className="text-lg font-semibold text-purple-700 mb-2">💰 Dynamic Calculation</div>
+              <p className="text-purple-600 text-sm">
+                Your {cpfToggle === "withCPF" ? "net" : "gross"} cumulative revenue of <span className="font-bold">
+                  {formatCurrency(cpfToggle === "withCPF" ? breakEvenAnalysis.finalCumulativeRevenueWithCPF : breakEvenAnalysis.finalCumulativeRevenueWithoutCPF)}
+                </span> 
+                is calculated dynamically based on:
+              </p>
+              <ul className="list-disc pl-5 text-purple-600 text-sm mt-2 space-y-1">
+                <li>Realistic herd growth patterns</li>
+                <li>Natural breeding cycles</li>
+                <li>Age-based milk production</li>
+                <li>Variable monthly revenue (₹9,000/₹6,000/₹0 cycles)</li>
+                {cpfToggle === "withCPF" && <li>Age-based CPF costs (₹13,000 per buffalo aged 3+ years)</li>}
+              </ul>
+            </div>
+            
+            <div className="bg-green-50 rounded-xl p-5">
+              <div className="text-lg font-semibold text-green-700 mb-2">📈 What This Means</div>
+              <p className="text-green-600 text-sm">
+                The break-even timeline shows when your <span className="font-bold">
+                  {cpfToggle === "withCPF" ? "net milk sales revenue (after CPF)" : "gross milk sales revenue (before CPF)"}
+                </span> 
+                equals your initial investment. This is based on conservative, realistic projections of:
+              </p>
+              <ul className="list-disc pl-5 text-green-600 text-sm mt-2 space-y-1">
+                <li>Each buffalo's natural reproductive cycle</li>
+                <li>Realistic milk production patterns</li>
+                <li>Gradual herd expansion over time</li>
+                <li>Market-based buffalo valuation</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Projection Summary */}
+        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-8 text-white text-center mt-8">
+          <h3 className="text-2xl font-bold mb-6">Projection Summary (2026-2035)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+              <div className="text-3xl font-bold">{treeData.units}</div>
+              <div className="text-lg">Starting Units</div>
+            </div>
+            <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+              <div className="text-3xl font-bold">10</div>
+              <div className="text-lg">Projection Years</div>
+            </div>
+            <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+              <div className="text-3xl font-bold">
+                {cpfToggle === "withCPF" 
+                  ? (breakEvenAnalysis.exactBreakEvenDateWithCPF ? 
+                      (breakEvenAnalysis.exactBreakEvenDateWithCPF.getFullYear() - treeData.startYear + 1) : 'N/A')
+                  : (breakEvenAnalysis.exactBreakEvenDateWithoutCPF ? 
+                      (breakEvenAnalysis.exactBreakEvenDateWithoutCPF.getFullYear() - treeData.startYear + 1) : 'N/A')}
+              </div>
+              <div className="text-lg">Years to Break-Even</div>
+            </div>
+            <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm">
+              <div className="text-3xl font-bold">
+                {cpfToggle === "withCPF" ? monthsToBreakEvenWithCPF || 'N/A' : monthsToBreakEvenWithoutCPF || 'N/A'}
+              </div>
+              <div className="text-lg">Months to Break-Even</div>
+            </div>
+          </div>
+          <div className="mt-6 text-lg opacity-90">
+            Projection Period: {treeData.startYear} to 2035 (10 years) | Mode: {cpfToggle === "withCPF" ? "With CPF" : "Without CPF"}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Summary Cards Component
   const SummaryCards = () => (
@@ -1306,9 +2460,9 @@ const CostEstimationTable = ({
       </div>
 
       <div className="bg-cyan-50 rounded-3xl p-8 xl:p-3 xl:w-50 xl:h-40 shadow-2xl border border-green-100 text-center transform hover:scale-105 transition-transform duration-300">
-        <div className="text-5xl font-bold text-gray-600 mb-4 xl:text-2xl xl:mb-1">{treeData.years}</div>
+        <div className="text-5xl font-bold text-gray-600 mb-4 xl:text-2xl xl:mb-1">10</div>
         <div className="text-lg font-semibold text-gray-600 uppercase tracking-wide xl:text-lg">Simulation Years</div>
-        <div className="text-sm text-gray-700 mt-2">Revenue generation period</div>
+        <div className="text-sm text-gray-700 mt-2">2026 to 2035</div>
         <div className="w-16 h-2 bg-green-500 mx-auto mt-4  rounded-full"></div>
       </div>
 
@@ -1328,142 +2482,215 @@ const CostEstimationTable = ({
     </div>
   );
 
-  // Production Schedule Component
-  
+  // Updated RevenueTable Component with CPF toggle
+  const RevenueTable = () => {
+    // Find asset market value for each year
+    const getAssetValueForYear = (year) => {
+      const asset = assetMarketValue.find(a => a.year === year);
+      return asset ? asset.totalAssetValue : 0;
+    };
 
-  // Enhanced Revenue Table Component
-  const RevenueTable = () => (
-    <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden mb-16">
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-10 text-white">
-        <div className="h-10"></div>
-        <h2 className="text-4xl font-bold mb-4 flex items-center gap-4">
-          <span className="text-5xl">💰</span>
-          Annual Herd Revenue Breakdown
-        </h2>
-        <p className="text-blue-100 text-xl">Detailed year-by-year financial analysis based on actual herd growth with staggered cycles</p>
-      </div>
+    return (
+      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden mb-16">
+        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-10 text-white">
+          <div className="h-10"></div>
+          <h2 className="text-4xl font-bold mb-4 flex items-center gap-4">
+            <span className="text-5xl">💰</span>
+            Annual Herd Revenue Breakdown (2026-2035)
+          </h2>
+          <p className="text-blue-100 text-xl">Detailed year-by-year financial analysis based on actual herd growth with staggered cycles</p>
+          
+          {/* CPF Toggle */}
+          <div className="mt-6 flex justify-center">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+              <div className="text-lg font-semibold mb-2 text-center">Select CPF Mode:</div>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setCpfToggle("withCPF")}
+                  className={`px-6 py-3 rounded-xl font-bold transition-all ${cpfToggle === "withCPF" ? 'bg-green-500 text-white' : 'bg-white/30 text-white hover:bg-white/40'}`}
+                >
+                  With CPF
+                </button>
+                <button
+                  onClick={() => setCpfToggle("withoutCPF")}
+                  className={`px-6 py-3 rounded-xl font-bold transition-all ${cpfToggle === "withoutCPF" ? 'bg-blue-500 text-white' : 'bg-white/30 text-white hover:bg-white/40'}`}
+                >
+                  Without CPF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <div className="overflow-x-auto p-2">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gradient-to-r from-gray-50 to-blue-50">
-              <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                <div className="text-xl">Year</div>
-                <div className="text-base font-normal text-gray-500">Timeline</div>
-              </th>
-              <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                <div className="text-xl">Total</div>
-                <div className="text-base font-normal text-gray-500">Buffaloes</div>
-              </th>
-              <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                <div className="text-xl">Mature</div>
-                <div className="text-base font-normal text-gray-500">Buffaloes</div>
-              </th>
-              <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                <div className="text-xl">Annual Revenue</div>
-                <div className="text-base font-normal text-gray-500">Current Year</div>
-              </th>
-              <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                <div className="text-xl">Cumulative Revenue</div>
-                <div className="text-base font-normal text-gray-500">Running Total</div>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {yearlyData.map((data, index) => {
-              const cumulativeRevenue = yearlyData
-                .slice(0, index + 1)
-                .reduce((sum, item) => sum + item.revenue, 0);
+        <div className="overflow-x-auto p-2">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gradient-to-r from-gray-50 to-blue-50">
+                <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                  <div className="text-xl">Year</div>
+                  <div className="text-base font-normal text-gray-500">Timeline</div>
+                </th>
+                <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                  <div className="text-xl">Total</div>
+                  <div className="text-base font-normal text-gray-500">Buffaloes</div>
+                </th>
+                <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                  <div className="text-xl">Annual Revenue</div>
+                  <div className="text-base font-normal text-gray-500">
+                    {cpfToggle === "withCPF" ? "With CPF Deduction" : "Without CPF Deduction"}
+                  </div>
+                </th>
+                <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                  <div className="text-xl">Asset Market Value</div>
+                  <div className="text-base font-normal text-gray-500">Based on Age</div>
+                </th>
+                <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                  <div className="text-xl">Combined Value</div>
+                  <div className="text-base font-normal text-gray-500">Revenue + Assets</div>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {cumulativeYearlyData.map((data, index) => {
+                const annualRevenue = cpfToggle === "withCPF" ? data.revenueWithCPF : data.revenueWithoutCPF;
+                const assetValue = getAssetValueForYear(data.year);
+                const combinedValue = annualRevenue + assetValue;
+                
+                const growthRate = index > 0
+                  ? ((annualRevenue - cumulativeYearlyData[index - 1][cpfToggle === "withCPF" ? "revenueWithCPF" : "revenueWithoutCPF"]) / 
+                     cumulativeYearlyData[index - 1][cpfToggle === "withCPF" ? "revenueWithCPF" : "revenueWithoutCPF"] * 100).toFixed(1)
+                  : 0;
 
-              const growthRate = index > 0
-                ? ((data.revenue - yearlyData[index - 1].revenue) / yearlyData[index - 1].revenue * 100).toFixed(1)
-                : 0;
-
-              return (
-                <tr key={data.year} className="hover:bg-blue-50 transition-all duration-200 group">
-                  <td className="px-10 py-8 whitespace-nowrap">
-                    <div className="flex items-center gap-6">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                        {index + 1}
+                return (
+                  <tr key={data.year} className="hover:bg-blue-50 transition-all duration-200 group">
+                    <td className="px-10 py-8 whitespace-nowrap">
+                      <div className="flex items-center gap-6">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-gray-900">{data.year}</div>
+                          <div className="text-base text-gray-500">Year {index + 1}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-2xl font-bold text-gray-900">{data.year}</div>
-                        <div className="text-base text-gray-500">Year {index + 1}</div>
+                    </td>
+                    <td className="px-10 py-8 whitespace-nowrap">
+                      <div className="text-3xl font-bold text-purple-600">
+                        {formatNumber(data.totalBuffaloes)}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-10 py-8 whitespace-nowrap">
-                    <div className="text-3xl font-bold text-purple-600">
-                      {formatNumber(data.totalBuffaloes)}
-                    </div>
-                    <div className="text-base text-gray-500 mt-2">total buffaloes</div>
-                  </td>
-                  <td className="px-10 py-8 whitespace-nowrap">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {formatNumber(data.matureBuffaloes)}
-                    </div>
-                    <div className="text-base text-gray-500 mt-2">mature buffaloes</div>
-                  </td>
-                  <td className="px-10 py-8 whitespace-nowrap">
-                    <div className="text-3xl font-bold text-green-600">
-                      {formatCurrency(data.revenue)}
-                    </div>
-                    {growthRate > 0 && (
-                      <div className="text-base text-green-500 font-semibold mt-2 flex items-center gap-2">
-                        <span className="text-xl">↑</span>
-                        {growthRate}% growth
+                      <div className="text-base text-gray-500 mt-2">total buffaloes</div>
+                    </td>
+                    <td className="px-10 py-8 whitespace-nowrap">
+                      <div className="text-3xl font-bold text-green-600">
+                        {formatCurrency(annualRevenue)}
                       </div>
+                      {cpfToggle === "withCPF" && (
+                        <div className="text-base text-orange-600 font-semibold mt-2">
+                          CPF Cost: -{formatCurrency(data.cpfCost)}
+                        </div>
+                      )}
+                      {growthRate > 0 && (
+                        <div className="text-base text-green-500 font-semibold mt-2 flex items-center gap-2">
+                          <span className="text-xl">↑</span>
+                          {growthRate}% growth
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-10 py-8 whitespace-nowrap">
+                      <div className="text-3xl font-bold text-orange-600">
+                        {formatCurrency(assetValue)}
+                      </div>
+                      <div className="text-base text-gray-500 mt-2">
+                        Age-based valuation
+                      </div>
+                    </td>
+                    <td className="px-10 py-8 whitespace-nowrap">
+                      <div className="text-3xl font-bold text-indigo-600">
+                        {formatCurrency(combinedValue)}
+                      </div>
+                      <div className="text-base text-gray-500 mt-2">
+                        {annualRevenue > 0 ? ((assetValue / combinedValue * 100).toFixed(1)) : '100'}% assets
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <div className="h-5"></div>
+            <tfoot>
+              <tr className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
+                <td className="px-10 py-8">
+                  <div className="text-2xl font-bold">Grand Total</div>
+                  <div className="text-base opacity-80">10 Years (2026-2035)</div>
+                </td>
+                <td className="px-10 py-8">
+                  <div className="text-2xl font-bold">
+                    {formatNumber(yearlyData[yearlyData.length - 1]?.totalBuffaloes || 0)}
+                  </div>
+                  <div className="text-base opacity-80">final herd size</div>
+                </td>
+                <td className="px-10 py-8">
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(cpfToggle === "withCPF" 
+                      ? cumulativeYearlyData.reduce((sum, data) => sum + data.revenueWithCPF, 0)
+                      : cumulativeYearlyData.reduce((sum, data) => sum + data.revenueWithoutCPF, 0)
                     )}
-                  </td>
-                  <td className="px-10 py-8 whitespace-nowrap">
-                    <div className="text-3xl font-bold text-indigo-600">
-                      {formatCurrency(cumulativeRevenue)}
-                    </div>
-                    <div className="text-base text-gray-500 mt-2">
-                      {((cumulativeRevenue / totalRevenue) * 100).toFixed(1)}% of total
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <div className="h-5"></div>
-          <tfoot>
-            <tr className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
-              <td className="px-10 py-8">
-                <div className="text-2xl font-bold">Grand Total</div>
-                <div className="text-base opacity-80">{treeData.years} Years</div>
-              </td>
-              <td className="px-10 py-8">
-                <div className="text-2xl font-bold">
-                  {formatNumber(yearlyData[yearlyData.length - 1]?.totalBuffaloes || 0)}
-                </div>
-                <div className="text-base opacity-80">final herd size</div>
-              </td>
-              <td className="px-10 py-8">
-                <div className="text-2xl font-bold">
-                  {formatNumber(totalMatureBuffaloYears)}
-                </div>
-                <div className="text-base opacity-80">mature buffalo years</div>
-              </td>
-              <td className="px-10 py-8">
-                <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
-                <div className="text-base opacity-80">total revenue</div>
-              </td>
-              <td className="px-10 py-8">
-                <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
-                <div className="text-base opacity-80">final cumulative</div>
-              </td>
-            </tr>
-            <div className="h-10"></div>
-          </tfoot>
-        </table>
-      </div>
-    </div>
-  );
+                  </div>
+                  <div className="text-base opacity-80">total {cpfToggle === "withCPF" ? "net" : "gross"} revenue</div>
+                </td>
+                <td className="px-10 py-8">
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(assetMarketValue.reduce((sum, asset) => sum + asset.totalAssetValue, 0))}
+                  </div>
+                  <div className="text-base opacity-80">total asset value</div>
+                </td>
+                <td className="px-10 py-8">
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(
+                      (cpfToggle === "withCPF" 
+                        ? cumulativeYearlyData.reduce((sum, data) => sum + data.revenueWithCPF, 0)
+                        : cumulativeYearlyData.reduce((sum, data) => sum + data.revenueWithoutCPF, 0)
+                      ) + assetMarketValue.reduce((sum, asset) => sum + asset.totalAssetValue, 0)
+                    )}
+                  </div>
+                  <div className="text-base opacity-80">total combined value</div>
+                </td>
+              </tr>
+              <div className="h-10"></div>
+            </tfoot>
+          </table>
+        </div>
 
-  // Additional Information Component
-  
+        {/* Explanation Section */}
+        <div className="p-8 bg-gradient-to-r from-blue-50 to-cyan-50 border-t border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-xl p-6 border border-blue-200">
+              <div className="text-lg font-bold text-blue-700 mb-2">Annual Revenue</div>
+              <div className="text-sm text-gray-600">
+                {cpfToggle === "withCPF" 
+                  ? "Net revenue from milk sales after deducting CPF costs (₹13,000 per buffalo aged 3+ years)"
+                  : "Gross revenue from milk sales before CPF deductions"
+                }
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-6 border border-orange-200">
+              <div className="text-lg font-bold text-orange-700 mb-2">Asset Market Value</div>
+              <div className="text-sm text-gray-600">
+                Market value of your buffalo herd based on age-based pricing (₹3,000 for calves to ₹1,75,000 for mother buffaloes)
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-6 border border-indigo-200">
+              <div className="text-lg font-bold text-indigo-700 mb-2">Combined Value</div>
+              <div className="text-sm text-gray-600">
+                Total value = Annual Revenue + Asset Market Value. Represents the complete financial position for each year.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 bg-white z-50 overflow-auto">
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -1472,34 +2699,93 @@ const CostEstimationTable = ({
           {/* Header */}
           <div className="text-center mb-16 xl:mb-7">
             <div className="inline-block  bg-gray-500 text-white px-12 py-8 rounded-2xl shadow-2xl mb-8 transform hover:scale-105 transition-transform duration-300 xl:px-5 xl:py-2 xl:my-5 xl:w-11/12">
-              <h1 className="text-5xl font-bold mb-4 xl:text-3xl xl:mb-2">Buffalo Herd Investment Analysis</h1>
+              <h1 className="text-5xl font-bold mb-4 xl:text-3xl xl:mb-2">Buffalo Herd Investment Analysis (2026-2035)</h1>
               <h2 className="text-3xl font-semibold opacity-90 xl:text-lg">2 Mother Buffaloes (60 months) + 2 Calves per Unit | Complete Financial Projection</h2>
             </div>
             <p className="text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed xl:text-lg">
-              Comprehensive financial analysis for {treeData.units} starting unit{treeData.units > 1 ? 's' : ''} over {treeData.years} years
+              Comprehensive financial analysis for {treeData.units} starting unit{treeData.units > 1 ? 's' : ''} over 10 years (2026-2035)
               <br />
               <span className="text-lg text-gray-500 xl:text-[0.8rem]">
-                Each unit starts with 2 mother buffaloes (₹1.75L each, 60 months old) + 2 newborn calves (included free) | Age-based asset valuation
+                Each unit: 2 mother buffaloes (₹1.75L each) + 2 newborn calves + ONE CPF coverage (₹13,000) for both mothers
               </span>
             </p>
           </div>
           <div className="h-5 xl:h-0"></div>
 
           <SummaryCards />
-          <div className=' w-full  flex items-center justify-center text-white mb-8'>
-            <button onClick={() => SetActiveTab("Montly Revenue Break")} className='bg-gray-700 font-bold   mx-2  rounded-xl p-2 text-[0.7rem] '>Montly Revenue Break</button>
-            <button onClick={() => SetActiveTab("Revenue Break Even")} className='bg-gray-700 font-bold  mx-2  rounded-xl p-2 text-[0.7rem]'>Revenue Break Even</button>
-            <button onClick={() => SetActiveTab("Asset Market Value")} className='bg-gray-700 font-bold  mx-2  rounded-xl p-2 text-[0.7rem]'>Asset Market Value</button>
-            <button onClick={() => SetActiveTab("Herd Performance")} className='bg-gray-700 font-bold  mx-2  rounded-xl p-2 text-[0.7rem]'>Herd Performance</button>
-            <button onClick={() => SetActiveTab("Break Even")} className='bg-gray-700 font-bold  mx-2  rounded-xl p-2 text-[0.7rem]'>Break Even</button>
-            <button onClick={() => SetActiveTab("Annual Herd Revenue")} className='bg-gray-700 font-bold mx-2  rounded-xl p-2 text-[0.7rem]'>Annual Herd Revenue</button>
-
+          <div className='w-full flex items-center justify-center text-white mb-8 flex-wrap gap-2'>
+            <button 
+              onClick={() => SetActiveTab("Monthly Revenue Break")} 
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
+                activeTab === "Monthly Revenue Break" 
+                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
+                  : 'bg-black text-white hover:bg-gray-800'
+              }`}
+            >
+              Monthly Revenue Break
+            </button>
+           
+            <button 
+              onClick={() => SetActiveTab("Revenue Break Even")} 
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
+                activeTab === "Revenue Break Even" 
+                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
+                  : 'bg-black text-white hover:bg-gray-800'
+              }`}
+            >
+              Revenue Break Even
+            </button>
+            <button 
+              onClick={() => SetActiveTab("Asset Market Value")} 
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
+                activeTab === "Asset Market Value" 
+                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
+                  : 'bg-black text-white hover:bg-gray-800'
+              }`}
+            >
+              Asset Market Value
+            </button>
+            <button 
+              onClick={() => SetActiveTab("Herd Performance")} 
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
+                activeTab === "Herd Performance" 
+                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
+                  : 'bg-black text-white hover:bg-gray-800'
+              }`}
+            >
+              Herd Performance
+            </button>
+            <button 
+              onClick={() => SetActiveTab("Annual Herd Revenue")} 
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
+                activeTab === "Annual Herd Revenue" 
+                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
+                  : 'bg-black text-white hover:bg-gray-800'
+              }`}
+            >
+              Annual Herd Revenue
+            </button>
+             <button 
+              onClick={() => SetActiveTab("Break Even Timeline")} 
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
+                activeTab === "Break Even Timeline" 
+                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
+                  : 'bg-black text-white hover:bg-gray-800'
+              }`}
+            >
+              Break Even Timeline
+            </button>
           </div>
           <div className='w-full'>
-            {activeTab === "Montly Revenue Break" &&
+            {activeTab === "Monthly Revenue Break" &&
               <div>
                 {/* Detailed Monthly Revenue Components */}
                 <DetailedMonthlyRevenueBreakdown />
+              </div>}
+            {activeTab === "Break Even Timeline" &&
+              <div>
+                {/* Break-Even Timeline Component */}
+                <BreakEvenTimeline />
               </div>}
             {activeTab === "Revenue Break Even" &&
               <div>
@@ -1521,7 +2807,7 @@ const CostEstimationTable = ({
                     <div className="pt-16 pb-8">
                       <div className="h-5"></div>
                       <h2 className="text-5xl font-bold text-gray-800 text-center flex items-center justify-center gap-6">
-                        Herd Performance Analytics
+                        Herd Performance Analytics (2026-2035)
                       </h2>
                     </div>
                     <div className="h-5"></div>
@@ -1570,17 +2856,13 @@ const CostEstimationTable = ({
                   </div>
                 </div>
               </div>}
-            {activeTab === "Break Even" &&
-              <div>
-                No content to load
-              </div>}
             {activeTab === "Annual Herd Revenue" &&
               <div>
                 <RevenueTable />
               </div>}
           </div>
           <div className="h-10"></div>
-                   {/* Action Buttons */}
+          {/* Action Buttons */}
           <div className="text-center mb-12">
             <button
               onClick={() => setShowCostEstimation(false)}
