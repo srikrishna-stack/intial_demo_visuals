@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, RotateCcw, ZoomIn, ZoomOut, Calculator } from "lucide-react";
+import { Play, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 
 const HeaderControls = ({
   units,
@@ -16,7 +16,6 @@ const HeaderControls = ({
   runSimulation,
   treeData,
   resetSimulation,
-  setShowCostEstimation,
   handleZoomIn,
   handleZoomOut,
   handleResetView,
@@ -38,13 +37,6 @@ const HeaderControls = ({
           </h1>
           {treeData && (
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowCostEstimation(true)}
-                className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-bold hover:from-green-600 hover:to-emerald-600 transition-all transform hover:scale-105 shadow-xl text-lg"
-              >
-                <Calculator size={20} />
-                Price Estimation
-              </button>
               <button
                 onClick={resetSimulation}
                 className="flex items-center gap-3 px-6 py-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors text-lg font-semibold"

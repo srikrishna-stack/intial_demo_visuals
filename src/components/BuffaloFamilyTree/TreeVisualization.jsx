@@ -12,7 +12,6 @@ const TreeVisualization = ({
   handleMouseUp,
   containerRef,
   treeContainerRef,
-  onShowCostEstimation
 }) => {
   if (!treeData) {
     return (
@@ -94,15 +93,12 @@ const TreeVisualization = ({
           <div className="text-sm opacity-90">Total Buffaloes</div>
         </div>
         
-        {/* Revenue Report Button */}
+        {/* Revenue Display */}
         {treeData.revenueData && (
-          <button
-            onClick={onShowCostEstimation}
-            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl p-5 shadow-xl min-w-[160px] hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105"
-          >
+          <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl p-5 shadow-xl text-white min-w-[160px]">
             <div className="text-2xl font-bold">₹{Math.round(treeData.revenueData.totalRevenue / 100000)}L+</div>
-            <div className="text-sm opacity-90">View Revenue Report</div>
-          </button>
+            <div className="text-sm opacity-90">Total Revenue</div>
+          </div>
         )}
       </div>
 
@@ -147,6 +143,7 @@ const TreeVisualization = ({
                       data={founder} 
                       founder 
                       displayName={getBuffaloDisplayName(founder)}
+                      elementId={`buffalo-${founder.id}`}
                     />
                     <TreeBranch 
                       parent={founder} 

@@ -1,4 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import Xarrow from "react-xarrows";
+
+const lineColors = [
+  "#ff9800", // gen 0 → 1
+  "#3f51b5",
+  "#009688",
+  "#e91e63",
+  "#f44336",
+  "#9c27b0",
+  "#4caf50"
+];
 
 // Colors array for different generations
 export const colors = [
@@ -30,13 +41,14 @@ export const buildTree = (root, all) => {
   return all.filter((b) => b.parentId === root.id);
 };
 
-// Buffalo Node Component - Updated to accept displayName prop
-export const BuffaloNode = ({ data, founder, displayName }) => (
-  <div className="flex flex-col items-center group relative">
+// Buffalo Node Component - Updated to accept elementId
+export const BuffaloNode = ({ data, founder, displayName, elementId }) => (
+  <div id={elementId} className="flex flex-col items-center group relative">
     <div
-      className={`${
-        colors[data.generation % colors.length]
-      } rounded-full w-16 h-16 flex flex-col justify-center items-center text-white shadow-lg transform transition-all duration-200 hover:scale-110 border-2 border-white`}
+      className={`${colors[data.generation % colors.length]}
+        rounded-full w-16 h-16 flex flex-col justify-center items-center
+        text-white shadow-lg transform transition-all duration-200
+        hover:scale-110 border-2 border-white`}
     >
       <div className="text-sm font-bold">
         {founder ? displayName : data.birthYear}
@@ -59,91 +71,69 @@ export const BuffaloNode = ({ data, founder, displayName }) => (
   </div>
 );
 
-// Curved Arrow Component (unchanged)
-export const CurvedArrow = ({ flip, hasSiblings, index }) => {
-  const strokeColor = "#4F46E5";
-  const strokeWidth = 2;
-  
-  return (
-    <div className={`relative ${hasSiblings ? (index === 0 ? "-mr-3" : "-ml-3") : ""}`}>
-      <svg
-        width="60"
-        height="30"
-        viewBox="0 0 60 30"
-        className={flip ? "scale-x-[-1]" : ""}
-      >
-        <path
-          d="M10 25 C 30 5, 30 5, 50 25"
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-          fill="transparent"
-          strokeDasharray={hasSiblings ? "3,3" : "0"}
-          markerEnd={hasSiblings ? "url(#arrowhead-dashed)" : "url(#arrowhead)"}
-        />
-        <defs>
-          <marker
-            id="arrowhead"
-            markerWidth="4"
-            markerHeight="4"
-            refX="3"
-            refY="2"
-            orient="auto"
-          >
-            <polygon points="0 0, 4 2, 0 4" fill={strokeColor} />
-          </marker>
-          <marker
-            id="arrowhead-dashed"
-            markerWidth="4"
-            markerHeight="4"
-            refX="3"
-            refY="2"
-            orient="auto"
-          >
-            <polygon points="0 0, 4 2, 0 4" fill={strokeColor} />
-          </marker>
-        </defs>
-      </svg>
-    </div>
-  );
-};
-
-// Tree Branch Component - Updated to pass getDisplayName
-export const TreeBranch = ({ parent, all, level = 0, getDisplayName }) => {
+// Tree Branch Component with Xarrow - FIXED VERSION
+export const TreeBranch = ({ parent, all, level = 0, getDisplayName, zoom = 1 }) => {
   const kids = buildTree(parent, all);
+  const [forceUpdate, setForceUpdate] = useState(0);
+  
   if (kids.length === 0) return null;
 
+  // Force update arrows when zoom changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setForceUpdate(prev => prev + 1);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [zoom]);
+
   return (
-    <div className="flex flex-col items-center mt-4">
-      {kids.length === 1 ? (
-        <div className="flex flex-col items-center">
-          <CurvedArrow flip={false} hasSiblings={false} />
-          <div className="mt-1">
-            <BuffaloNode data={kids[0]} displayName={getDisplayName(kids[0])} />
-          </div>
-          <TreeBranch parent={kids[0]} all={all} level={level + 1} getDisplayName={getDisplayName} />
-        </div>
-      ) : (
-        <div className="flex flex-col items-center">
-          <div className="relative mb-2">
-            <div className="absolute top-0 left-2 right-2 h-0.5 bg-indigo-400 transform -translate-y-full"></div>
-          </div>
-          <div className="flex gap-4 justify-center">
-            {kids.map((child, i) => (
-              <div key={child.id} className="flex flex-col items-center">
-                <CurvedArrow 
-                  flip={i === kids.length - 1} 
-                  hasSiblings={kids.length > 1}
-                  index={i}
-                />
-                <div className="mt-1">
-                  <BuffaloNode data={child} displayName={getDisplayName(child)} />
-                </div>
-                <TreeBranch parent={child} all={all} level={level + 1} getDisplayName={getDisplayName} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col items-center mt-6">
+      {/* Connecting line from parent */}
+      <div className="h-10 w-0.5 bg-gradient-to-b from-gray-300 to-gray-400"></div>
+      
+      <div className="flex flex-wrap gap-6 justify-center items-start relative">
+        {kids.map((child, index) => {
+          const parentId = `buffalo-${parent.id}`;
+          const childId = `buffalo-${child.id}`;
+
+          return (
+            <div key={`${child.id}-${forceUpdate}`} className="flex flex-col items-center relative">
+              {/* Child Node */}
+              <BuffaloNode
+                data={child}
+                displayName={getDisplayName(child)}
+                elementId={childId}
+              />
+
+              {/* Recursive children */}
+              <TreeBranch
+                parent={child}
+                all={all}
+                level={level + 1}
+                getDisplayName={getDisplayName}
+                zoom={zoom}
+              />
+
+              {/* Line between parent → child - Force update on zoom */}
+              <Xarrow
+                key={`arrow-${parent.id}-${child.id}-${forceUpdate}`}
+                start={parentId}
+                end={childId}
+                color={lineColors[parent.generation % lineColors.length]}
+                strokeWidth={2.5}
+                curveness={0.6}
+                showHead={true}
+                headSize={4}
+                path="smooth"
+                dashness={false}
+                startAnchor="bottom"
+                endAnchor="top"
+                zIndex={10}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

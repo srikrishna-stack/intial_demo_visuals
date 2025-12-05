@@ -11,7 +11,7 @@ const CostEstimationTable = ({
   treeData,
   activeGraph,
   setActiveGraph,
-  setShowCostEstimation
+  onBack
 }) => {
   if (!treeData?.revenueData) {
     return (
@@ -19,7 +19,7 @@ const CostEstimationTable = ({
         <div className="text-center p-8">
           <div className="text-2xl text-red-500 mb-4">Revenue data not available</div>
           <button
-            onClick={() => setShowCostEstimation(false)}
+            onClick={onBack}
             className="bg-red-500 text-white px-6 py-3 rounded-lg"
           >
             Go Back
@@ -717,8 +717,8 @@ const CostEstimationTable = ({
     "July", "August", "September", "October", "November", "December"];
 
   return (
-    <div className="fixed inset-0 bg-white z-50 overflow-auto">
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="h-full overflow-auto bg-white rounded-lg shadow-lg m-4">
+      <div className="min-h-full bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="max-w-8xl mx-auto">
           <div className="h-5"></div>
           {/* Header */}

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import HeaderControls from './HeaderControls';
 import TreeVisualization from './TreeVisualization';
-
 import { formatCurrency, formatNumber } from './CommonComponents';
 import CostEstimationTable from "../CostEstimation/CostEstimationTable";
 
@@ -9,15 +8,15 @@ export default function BuffaloFamilyTree() {
   const [units, setUnits] = useState(1);
   const [years, setYears] = useState(10);
   const [startYear, setStartYear] = useState(2026);
-  const [startMonth, setStartMonth] = useState(0); // 0 = January
-  const [startDay, setStartDay] = useState(1); // New: Day selection
+  const [startMonth, setStartMonth] = useState(0);
+  const [startDay, setStartDay] = useState(1);
   const [treeData, setTreeData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [showCostEstimation, setShowCostEstimation] = useState(false);
   const [activeGraph, setActiveGraph] = useState("revenue");
+  const [activeTab, setActiveTab] = useState("familyTree");
   
   const containerRef = useRef(null);
   const treeContainerRef = useRef(null);
@@ -40,24 +39,22 @@ export default function BuffaloFamilyTree() {
 
   // Staggered revenue configuration
   const revenueConfig = {
-    landingPeriod: 2, // months for each buffalo
-    highRevenuePhase: { months: 5, revenue: 9000 }, // 5 months of high revenue
-    mediumRevenuePhase: { months: 3, revenue: 6000 }, // 3 months of medium revenue
-    restPeriod: { months: 4, revenue: 0 } // 4 months rest
+    landingPeriod: 2,
+    highRevenuePhase: { months: 5, revenue: 9000 },
+    mediumRevenuePhase: { months: 3, revenue: 6000 },
+    restPeriod: { months: 4, revenue: 0 }
   };
 
   // Calculate monthly revenue for EACH buffalo based on its individual cycle
   const calculateMonthlyRevenueForBuffalo = (buffaloId, acquisitionMonth, currentYear, currentMonth) => {
-    // Each buffalo starts its cycle from its acquisition month
     const monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
     
-    // First 2 months after acquisition are landing/rest
     if (monthsSinceAcquisition < revenueConfig.landingPeriod) {
       return 0;
     }
     
     const productionMonths = monthsSinceAcquisition - revenueConfig.landingPeriod;
-    const cyclePosition = productionMonths % 12; // 12-month cycle
+    const cyclePosition = productionMonths % 12;
     
     if (cyclePosition < revenueConfig.highRevenuePhase.months) {
       return revenueConfig.highRevenuePhase.revenue;
@@ -72,15 +69,12 @@ export default function BuffaloFamilyTree() {
   const calculateAnnualRevenueForHerd = (herd, startYear, startMonth, currentYear) => {
     let annualRevenue = 0;
     
-    // Count mature buffaloes (age >= 3) in current year
     const matureBuffaloes = herd.filter(buffalo => {
       const ageInCurrentYear = currentYear - buffalo.birthYear;
       return ageInCurrentYear >= 3;
     });
 
-    // Calculate revenue for each mature buffalo with its individual cycle
-    matureBuffaloes.forEach((buffalo, index) => {
-      // Stagger acquisition: first buffalo in Jan (0), second in July (6)
+    matureBuffaloes.forEach((buffalo) => {
       const acquisitionMonth = buffalo.acquisitionMonth;
       
       for (let month = 0; month < 12; month++) {
@@ -163,7 +157,7 @@ export default function BuffaloFamilyTree() {
           parentId: null,
           generation: 0,
           birthYear: startYear - 3,
-          acquisitionMonth: startMonth, // January (0)
+          acquisitionMonth: startMonth,
           unit: u + 1,
         });
 
@@ -175,7 +169,7 @@ export default function BuffaloFamilyTree() {
           parentId: null,
           generation: 0,
           birthYear: startYear - 3,
-          acquisitionMonth: (startMonth + 6) % 12, // July (6)
+          acquisitionMonth: (startMonth + 6) % 12,
           unit: u + 1,
         });
       }
@@ -193,7 +187,7 @@ export default function BuffaloFamilyTree() {
             mature: false,
             parentId: parent.id,
             birthYear: currentYear,
-            acquisitionMonth: parent.acquisitionMonth, // Inherit parent's cycle
+            acquisitionMonth: parent.acquisitionMonth,
             generation: parent.generation + 1,
             unit: parent.unit,
           });
@@ -221,6 +215,7 @@ export default function BuffaloFamilyTree() {
       });
 
       setLoading(false);
+      setActiveTab("familyTree");
       setZoom(1);
       setPosition({ x: 0, y: 0 });
     }, 300);
@@ -234,9 +229,9 @@ export default function BuffaloFamilyTree() {
     setStartYear(2026);
     setStartMonth(0);
     setStartDay(1);
+    setActiveTab("familyTree");
     setZoom(1);
     setPosition({ x: 0, y: 0 });
-    setShowCostEstimation(false);
   };
 
   // Zoom controls
@@ -287,17 +282,6 @@ export default function BuffaloFamilyTree() {
     );
   }
 
-  if (showCostEstimation) {
-    return (
-      <CostEstimationTable 
-        treeData={treeData}
-        activeGraph={activeGraph}
-        setActiveGraph={setActiveGraph}
-        setShowCostEstimation={setShowCostEstimation}
-      />
-    );
-  }
-
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col overflow-hidden">
       <HeaderControls
@@ -315,25 +299,71 @@ export default function BuffaloFamilyTree() {
         runSimulation={runSimulation}
         treeData={treeData}
         resetSimulation={resetSimulation}
-        setShowCostEstimation={setShowCostEstimation}
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}
         handleResetView={handleResetView}
         zoom={zoom}
       />
       
-      <TreeVisualization
-        treeData={treeData}
-        zoom={zoom}
-        position={position}
-        isDragging={isDragging}
-        handleMouseDown={handleMouseDown}
-        handleMouseMove={handleMouseMove}
-        handleMouseUp={handleMouseUp}
-        containerRef={containerRef}
-        treeContainerRef={treeContainerRef}
-        onShowCostEstimation={() => setShowCostEstimation(true)}
-      />
+      {/* Tab Navigation */}
+      {treeData && (
+        <div className="flex border-b border-gray-200 bg-white/90 backdrop-blur-sm">
+          <button
+            className={`flex-1 py-4 text-lg font-semibold transition-all duration-200 ${
+              activeTab === "familyTree" 
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50" 
+                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50/50"
+            }`}
+            onClick={() => setActiveTab("familyTree")}
+          >
+            Family Tree
+          </button>
+          <button
+            className={`flex-1 py-4 text-lg font-semibold transition-all duration-200 ${
+              activeTab === "costEstimation" 
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50" 
+                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50/50"
+            }`}
+            onClick={() => setActiveTab("costEstimation")}
+          >
+            Price Estimation
+          </button>
+        </div>
+      )}
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-hidden">
+        {activeTab === "familyTree" ? (
+          <TreeVisualization
+            treeData={treeData}
+            zoom={zoom}
+            position={position}
+            isDragging={isDragging}
+            handleMouseDown={handleMouseDown}
+            handleMouseMove={handleMouseMove}
+            handleMouseUp={handleMouseUp}
+            containerRef={containerRef}
+            treeContainerRef={treeContainerRef}
+          />
+        ) : treeData ? (
+          <div className="h-full overflow-auto bg-gradient-to-br from-blue-50 to-indigo-50">
+            <CostEstimationTable 
+              treeData={treeData}
+              activeGraph={activeGraph}
+              setActiveGraph={setActiveGraph}
+              onBack={() => setActiveTab("familyTree")}
+            />
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-5xl mb-4">📊</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Price Estimation</h2>
+              <p className="text-gray-600">Run a simulation first to see price estimation data</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

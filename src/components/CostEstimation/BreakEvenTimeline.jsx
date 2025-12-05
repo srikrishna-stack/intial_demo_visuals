@@ -26,7 +26,7 @@ const BreakEvenTimeline = ({
     <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-3xl p-10 shadow-2xl border border-green-200 mb-16">
       <h2 className="text-4xl font-bold text-green-800 mb-10 text-center flex items-center justify-center gap-4">
         <span className="text-5xl">🎯</span>
-        Break-Even Timeline Analysis (2026-2035)
+        Break-Even Timeline Analysis 
       </h2>
 
       {/* CPF Toggle */}
