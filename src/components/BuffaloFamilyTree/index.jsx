@@ -307,31 +307,31 @@ export default function BuffaloFamilyTree() {
       
       {/* Tab Navigation */}
       {treeData && (
-  <div className="flex justify-center items-center">
-    <div className="inline-flex rounded-lg border border-gray-300 p-1 bg-white/90 backdrop-blur-sm shadow-sm">
-      <button
-        className={`px-6 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
-          activeTab === "familyTree" 
-            ? "text-white bg-green-600 shadow-sm" 
-            : "text-black bg-transparent hover:bg-gray-100"
-        }`}
-        onClick={() => setActiveTab("familyTree")}
-      >
-        Family Tree
-      </button>
-      <button
-        className={`px-6 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
-          activeTab === "costEstimation" 
-            ? "text-white bg-green-600 shadow-sm" 
-            : "text-black bg-transparent hover:bg-gray-100"
-        }`}
-        onClick={() => setActiveTab("costEstimation")}
-      >
-        Price Estimation
-      </button>
-    </div>
-  </div>
-)}
+        <div className="my-5">
+          <div className="flex justify-center items-center gap-6 ">
+            <button
+            className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
+                activeTab === "familyTree" 
+                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
+                  : 'bg-black text-white hover:bg-gray-800'
+              }`}
+            onClick={() => setActiveTab("familyTree")}
+          >
+            Family Tree
+          </button>
+          <button
+            className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
+                activeTab === "costEstimation" 
+                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
+                  : 'bg-black text-white hover:bg-gray-800'
+              }`}
+            onClick={() => setActiveTab("costEstimation")}
+          >
+            Price Estimation
+          </button>
+          </div>
+        </div>
+      )}
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
