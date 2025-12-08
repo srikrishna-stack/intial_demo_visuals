@@ -14,7 +14,7 @@ const TreeVisualization = ({
   treeContainerRef,
   isFullScreen,
   toggleFullScreen,
-  handleFitToScreen, // New prop
+  handleFitToScreen,
 }) => {
   if (!treeData) {
     return (
@@ -33,7 +33,6 @@ const TreeVisualization = ({
               <p className="text-sm text-gray-600">Set your starting units and simulation period</p>
             </div>
             <div className="text-center p-3">
-
               <h3 className="font-bold text-xl mb-3">Simulate</h3>
               <p className="text-sm text-gray-600">Run the simulation to generate your herd</p>
             </div>
@@ -56,14 +55,13 @@ const TreeVisualization = ({
   const monthNames = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
 
-  // Function to get buffalo display name (A1, A2, etc.)
   const getBuffaloDisplayName = (buffalo) => {
     return `A${buffalo.id}`;
   };
 
   return (
     <div
-      className="flex-1 relative overflow-auto"
+      className="relative w-full h-full overflow-auto" // Changed to allow scrolling
       ref={containerRef}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -129,17 +127,15 @@ const TreeVisualization = ({
       {/* Tree Visualization Container */}
       <div
         ref={treeContainerRef}
-        className="w-full h-full p-10"
+        className="min-w-full min-h-full p-10" // Changed to min-w-full and min-h-full
         style={{
           transform: `scale(${zoom}) translate(${position.x}px, ${position.y}px)`,
           transition: isDragging ? 'none' : 'transform 0.1s ease',
-          minWidth: `${100 * zoom}%`,
-          minHeight: `${100 * zoom}%`,
           transformOrigin: '0 0'
         }}
       >
-        {/* flex-nowrap to prevent wrapping, min-w-max to ensure full width */}
-        <div className="flex flex-wrap gap-10 justify-center">
+        {/* Container for all founder trees */}
+        <div className="flex flex-wrap gap-10 justify-start items-start">
           {treeData.buffaloes
             .filter((b) => b.parentId === null)
             .map((founder) => (

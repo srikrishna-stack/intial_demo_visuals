@@ -139,6 +139,78 @@ const AssetMarketValue = ({
           </div>
         </div>
 
+        {/* New: Year-wise Age Category Distribution Table */}
+        <div className="bg-white rounded-xl p-6 border border-gray-300 shadow-sm mb-8 mx-4 lg:mx-20">
+          <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">
+            Year-wise Age Category Distribution (Years 1-10)
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gradient-to-r from-gray-50 to-blue-50">
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Year</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">0-6 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">6-12 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">12-18 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">18-24 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">24-30 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">30-36 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">36-40 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">40-48 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">48-60 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">60+ months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assetMarketValue.slice(0, 10).map((asset, yearIndex) => (
+                  <tr key={yearIndex} className="hover:bg-blue-50 transition-colors">
+                    <td className="px-6 py-4 border-b font-semibold text-gray-900">
+                      Year {yearIndex + 1} ({asset.year})
+                    </td>
+                    <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
+                      {asset.ageCategories?.['0-6 months']?.count || 0}
+                    </td>
+                    <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
+                      {asset.ageCategories?.['6-12 months']?.count || 0}
+                    </td>
+                    <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
+                      {asset.ageCategories?.['12-18 months']?.count || 0}
+                    </td>
+                    <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
+                      {asset.ageCategories?.['18-24 months']?.count || 0}
+                    </td>
+                    <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
+                      {asset.ageCategories?.['24-30 months']?.count || 0}
+                    </td>
+                    <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
+                      {asset.ageCategories?.['30-36 months']?.count || 0}
+                    </td>
+                    <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
+                      {asset.ageCategories?.['36-40 months']?.count || 0}
+                    </td>
+                    <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
+                      {asset.ageCategories?.['40-48 months']?.count || 0}
+                    </td>
+                    <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
+                      {asset.ageCategories?.['48-60 months']?.count || 0}
+                    </td>
+                    <td className="px-6 py-4 border-b text-center font-medium text-red-600">
+                      {asset.ageCategories?.['60+ months (Mother Buffalo)']?.count || 
+                       asset.ageCategories?.['60+ months']?.count || 0}
+                    </td>
+                    <td className="px-6 py-4 border-b text-center font-semibold text-green-600">
+                      {formatCurrency(asset.totalAssetValue || 0)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+      
+            </table>
+          </div>
+         
+        </div>
+
         {/* Combined Current vs Final Asset Value */}
         <div className="flex flex-col lg:flex-row justify-center items-center gap-8 mb-8 px-4">
           {/* Initial Asset Value Card */}
