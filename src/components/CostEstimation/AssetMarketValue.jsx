@@ -9,7 +9,10 @@ const AssetMarketValue = ({
   calculateDetailedAssetValue,
   assetMarketValue,
   formatCurrency,
-  isAssetMarketValue = false
+  isAssetMarketValue = false,
+  startYear,
+  endYear,
+  yearRange
 }) => {
   const [selectedYear, setSelectedYear] = useState(treeData.startYear + treeData.years);
 
@@ -143,7 +146,7 @@ const AssetMarketValue = ({
             <div className="text-2xl font-bold text-blue-700 mb-2">
               {formatCurrency(assetMarketValue[0]?.totalAssetValue || 0)}
             </div>
-            <div className="text-lg font-semibold text-blue-700">Initial Asset Value (2026)</div>
+            <div className="text-lg font-semibold text-blue-700">Initial Asset Value ({startYear})</div>
             <div className="text-sm text-gray-600 mt-2">
               {assetMarketValue[0]?.totalBuffaloes || 0} buffaloes
               <br />
@@ -158,7 +161,7 @@ const AssetMarketValue = ({
             <div className="text-2xl font-bold mb-2 ">
               {formatCurrency(assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0)}
             </div>
-            <div className="text-lg font-semibold opacity-90">Final Asset Value (2035)</div>
+            <div className="text-lg font-semibold opacity-90">Final Asset Value ({endYear})</div>
             <div className="text-sm opacity-80 mt-2">
               {assetMarketValue[assetMarketValue.length - 1]?.totalBuffaloes || 0} buffaloes
               <br />

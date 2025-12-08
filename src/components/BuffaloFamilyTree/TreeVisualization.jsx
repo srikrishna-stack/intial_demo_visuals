@@ -1,5 +1,5 @@
 import React from 'react';
-import { Move } from "lucide-react";
+import { Move, Maximize, Minimize, Scan } from "lucide-react";
 import { BuffaloNode, TreeBranch } from './CommonComponents';
 
 const TreeVisualization = ({
@@ -12,6 +12,9 @@ const TreeVisualization = ({
   handleMouseUp,
   containerRef,
   treeContainerRef,
+  isFullScreen,
+  toggleFullScreen,
+  handleFitToScreen, // New prop
 }) => {
   if (!treeData) {
     return (
@@ -20,7 +23,7 @@ const TreeVisualization = ({
           <h2 className="text-2xl font-bold text-gray-800 mb-2 xl:">
             Buffalo Family Tree Simulator
           </h2>
-          <p className="text-[0.9rem] text-gray-600  leading-relaxed">
+          <p className="text-xl text-gray-600 mb-10 leading-relaxed">
             Simulate the growth of your buffalo herd over time. Watch as your founding buffalos
             create generations of offspring in this interactive family tree visualization.
           </p>
@@ -75,7 +78,36 @@ const TreeVisualization = ({
           <Move size={16} />
           <span>Drag to pan | Scroll to zoom</span>
         </div>
-        <div className="text-sm text-gray-600">Use buttons to reset zoom</div>
+        <div className="text-sm text-gray-600 mb-3">Use buttons to reset zoom</div>
+
+        {/* Helper Buttons Grid */}
+        <div className="grid grid-cols-2 gap-2 w-full">
+          <button
+            onClick={handleFitToScreen}
+            className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors justify-center"
+            title="Fit to Screen"
+          >
+            <Scan size={14} />
+            <span>Fit View</span>
+          </button>
+          <button
+            onClick={toggleFullScreen}
+            className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors justify-center"
+            title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+          >
+            {isFullScreen ? (
+              <>
+                <Minimize size={14} />
+                <span>Exit</span>
+              </>
+            ) : (
+              <>
+                <Maximize size={14} />
+                <span>Expand</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -106,6 +138,7 @@ const TreeVisualization = ({
           transformOrigin: '0 0'
         }}
       >
+        {/* flex-nowrap to prevent wrapping, min-w-max to ensure full width */}
         <div className="flex flex-wrap gap-10 justify-center">
           {treeData.buffaloes
             .filter((b) => b.parentId === null)

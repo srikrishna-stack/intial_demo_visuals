@@ -33,7 +33,7 @@ const CostEstimationTable = ({
   const [cpfToggle, setCpfToggle] = useState("withCPF");
 
   const { yearlyData, totalRevenue, totalUnits, totalMatureBuffaloYears } = treeData.revenueData;
-  
+
   // Shared calculation functions
   const calculateAgeInMonths = (buffalo, targetYear, targetMonth = 0) => {
     const birthYear = buffalo.birthYear;
@@ -144,11 +144,11 @@ const CostEstimationTable = ({
 
     for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
       let totalCPFCost = 0;
-      
+
       for (let unit = 1; unit <= treeData.units; unit++) {
         let unitCPFCost = 0;
         const unitBuffaloes = Object.values(buffaloDetails).filter(buffalo => buffalo.unit === unit);
-        
+
         unitBuffaloes.forEach(buffalo => {
           if (buffalo.id === 'M1') {
             unitCPFCost += 13000;
@@ -161,13 +161,13 @@ const CostEstimationTable = ({
             }
           }
         });
-        
+
         totalCPFCost += unitCPFCost;
       }
-      
+
       cpfCostByYear[year] = totalCPFCost;
     }
-    
+
     return cpfCostByYear;
   };
 
@@ -178,7 +178,7 @@ const CostEstimationTable = ({
       const cpfCost = yearlyCPFCost[yearData.year] || 0;
       const revenueWithoutCPF = yearData.revenue;
       const revenueWithCPF = revenueWithoutCPF - cpfCost;
-      
+
       return {
         ...yearData,
         cpfCost,
@@ -194,11 +194,11 @@ const CostEstimationTable = ({
     const cumulativeData = [];
     let cumulativeRevenueWithoutCPF = 0;
     let cumulativeRevenueWithCPF = 0;
-    
+
     yearlyDataWithCPF.forEach((yearData, index) => {
       cumulativeRevenueWithoutCPF += yearData.revenueWithoutCPF;
       cumulativeRevenueWithCPF += yearData.revenueWithCPF;
-      
+
       cumulativeData.push({
         ...yearData,
         cumulativeRevenueWithoutCPF: cumulativeRevenueWithoutCPF,
@@ -206,7 +206,7 @@ const CostEstimationTable = ({
         cumulativeCPFCost: cumulativeRevenueWithoutCPF - cumulativeRevenueWithCPF
       });
     });
-    
+
     return cumulativeData;
   };
 
@@ -366,28 +366,46 @@ const CostEstimationTable = ({
     let exactBreakEvenDateWithoutCPF = null;
     let exactBreakEvenDateWithCPF = null;
 
+    // Helper to calculate total asset value for a specific point in time
+    const calculateTotalAssetValueForMonth = (targetYear, targetMonth) => {
+      let totalValue = 0;
+      Object.values(buffaloDetails).forEach(buffalo => {
+        // Only count buffaloes born before or in this month
+        if (buffalo.birthYear < targetYear || (buffalo.birthYear === targetYear && (buffalo.birthMonth || 0) <= targetMonth)) {
+          const ageInMonths = calculateAgeInMonths(buffalo, targetYear, targetMonth);
+          totalValue += getBuffaloValueByAge(ageInMonths);
+        }
+      });
+      return totalValue;
+    };
+
     for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
       for (let month = 0; month < 12; month++) {
         cumulativeRevenueWithoutCPF += investorMonthlyRevenue[year][month];
 
-        if (cumulativeRevenueWithoutCPF >= initialInvestment.totalInvestment && !breakEvenYearWithoutCPF) {
+        // Calculate Asset Value for this month
+        const currentAssetValue = calculateTotalAssetValueForMonth(year, month);
+        const totalValueWithoutCPF = cumulativeRevenueWithoutCPF + currentAssetValue;
+
+        if (totalValueWithoutCPF >= initialInvestment.totalInvestment && !breakEvenYearWithoutCPF) {
           breakEvenYearWithoutCPF = year;
           breakEvenMonthWithoutCPF = month;
-          
+
           const startDate = new Date(treeData.startYear, treeData.startMonth, treeData.startDay || 1);
           const monthsSinceStart = (year - treeData.startYear) * 12 + (month - treeData.startMonth);
           const breakEvenDate = new Date(startDate);
           breakEvenDate.setMonth(breakEvenDate.getMonth() + monthsSinceStart);
-          
+
           const lastDayOfMonth = new Date(breakEvenDate.getFullYear(), breakEvenDate.getMonth() + 1, 0).getDate();
           breakEvenDate.setDate(lastDayOfMonth);
-          
+
           exactBreakEvenDateWithoutCPF = breakEvenDate;
         }
       }
       if (breakEvenYearWithoutCPF) break;
     }
 
+    // Reset loop for With CPF calculation
     let tempCumulativeWithCPF = 0;
     for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
       const annualCPFCost = yearlyCPFCost[year] || 0;
@@ -395,18 +413,22 @@ const CostEstimationTable = ({
         tempCumulativeWithCPF += investorMonthlyRevenue[year][month];
         tempCumulativeWithCPF -= (annualCPFCost / 12);
 
-        if (tempCumulativeWithCPF >= initialInvestment.totalInvestment && !breakEvenYearWithCPF) {
+        // Calculate Asset Value for this month
+        const currentAssetValue = calculateTotalAssetValueForMonth(year, month);
+        const totalValueWithCPF = tempCumulativeWithCPF + currentAssetValue;
+
+        if (totalValueWithCPF >= initialInvestment.totalInvestment && !breakEvenYearWithCPF) {
           breakEvenYearWithCPF = year;
           breakEvenMonthWithCPF = month;
-          
+
           const startDate = new Date(treeData.startYear, treeData.startMonth, treeData.startDay || 1);
           const monthsSinceStart = (year - treeData.startYear) * 12 + (month - treeData.startMonth);
           const breakEvenDate = new Date(startDate);
           breakEvenDate.setMonth(breakEvenDate.getMonth() + monthsSinceStart);
-          
+
           const lastDayOfMonth = new Date(breakEvenDate.getFullYear(), breakEvenDate.getMonth() + 1, 0).getDate();
           breakEvenDate.setDate(lastDayOfMonth);
-          
+
           exactBreakEvenDateWithCPF = breakEvenDate;
         }
       }
@@ -415,15 +437,21 @@ const CostEstimationTable = ({
 
     let yearlyCumulativeWithoutCPF = 0;
     let yearlyCumulativeWithCPF = 0;
-    
+
     for (let i = 0; i < cumulativeYearlyData.length; i++) {
       const yearData = cumulativeYearlyData[i];
       yearlyCumulativeWithoutCPF = yearData.cumulativeRevenueWithoutCPF;
       yearlyCumulativeWithCPF = yearData.cumulativeRevenueWithCPF;
-      
-      const recoveryPercentageWithoutCPF = (yearlyCumulativeWithoutCPF / initialInvestment.totalInvestment) * 100;
-      const recoveryPercentageWithCPF = (yearlyCumulativeWithCPF / initialInvestment.totalInvestment) * 100;
-      
+
+      // Calculate Year-End Asset Value for Table
+      const yearEndAssetValue = calculateTotalAssetValueForMonth(yearData.year, 11); // December value
+
+      const totalValueWithoutCPF = yearlyCumulativeWithoutCPF + yearEndAssetValue;
+      const totalValueWithCPF = yearlyCumulativeWithCPF + yearEndAssetValue;
+
+      const recoveryPercentageWithoutCPF = (totalValueWithoutCPF / initialInvestment.totalInvestment) * 100;
+      const recoveryPercentageWithCPF = (totalValueWithCPF / initialInvestment.totalInvestment) * 100;
+
       let statusWithoutCPF = "in Progress";
       if (recoveryPercentageWithoutCPF >= 100) {
         statusWithoutCPF = "✔ Break-Even";
@@ -449,6 +477,9 @@ const CostEstimationTable = ({
         cpfCost: yearData.cpfCost,
         cumulativeRevenueWithoutCPF: yearlyCumulativeWithoutCPF,
         cumulativeRevenueWithCPF: yearlyCumulativeWithCPF,
+        assetValue: yearEndAssetValue,
+        totalValueWithoutCPF: totalValueWithoutCPF,
+        totalValueWithCPF: totalValueWithCPF,
         recoveryPercentageWithoutCPF: recoveryPercentageWithoutCPF,
         recoveryPercentageWithCPF: recoveryPercentageWithCPF,
         statusWithoutCPF: statusWithoutCPF,
@@ -482,7 +513,7 @@ const CostEstimationTable = ({
 
     for (let year = treeData.startYear; year <= endYear; year++) {
       let totalAssetValue = 0;
-      
+
       const ageCategories = {
         '0-6 months': { count: 0, value: 0 },
         '6-12 months': { count: 0, value: 0 },
@@ -618,7 +649,7 @@ const CostEstimationTable = ({
     const buffaloDetails = getBuffaloDetails();
     const unitBuffaloes = Object.values(buffaloDetails).filter(buffalo => buffalo.unit === unit);
     const cumulativeRevenue = {};
-    
+
     const monthlyRevenue = {};
     for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
       monthlyRevenue[year] = {};
@@ -657,7 +688,7 @@ const CostEstimationTable = ({
       }
       cumulativeRevenue[buffalo.id] = total;
     });
-    
+
     return cumulativeRevenue;
   };
 
@@ -665,6 +696,11 @@ const CostEstimationTable = ({
     const cumulativeRevenue = calculateCumulativeRevenueUntilYear(unit, selectedYear);
     return Object.values(cumulativeRevenue).reduce((sum, revenue) => sum + revenue, 0);
   };
+
+  // Calculate dynamic year ranges
+  const startYear = treeData.startYear;
+  const endYear = startYear + treeData.years - 1;
+  const yearRange = `${startYear}-${endYear}`;
 
   const herdStats = {
     startingBuffaloes: initialInvestment.totalBuffaloesAtStart,
@@ -710,69 +746,63 @@ const CostEstimationTable = ({
           <div className="h-5"></div>
           {/* <SummaryCards /> */}
           <div className='w-full flex items-center justify-center text-white mb-8 flex-wrap gap-2'>
-            <button 
-              onClick={() => setActiveTab("Monthly Revenue Break")} 
-              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
-                activeTab === "Monthly Revenue Break" 
-                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
-                  : 'bg-black text-white hover:bg-gray-800'
-              }`}
+            <button
+              onClick={() => setActiveTab("Monthly Revenue Break")}
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${activeTab === "Monthly Revenue Break"
+                ? 'bg-green-500 text-black shadow-lg transform scale-105'
+                : 'bg-black text-white hover:bg-gray-800'
+                }`}
             >
               Monthly Revenue Break
             </button>
-           
-            <button 
-              onClick={() => setActiveTab("Revenue Break Even")} 
-              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
-                activeTab === "Revenue Break Even" 
-                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
-                  : 'bg-black text-white hover:bg-gray-800'
-              }`}
+
+            <button
+              onClick={() => setActiveTab("Revenue Break Even")}
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${activeTab === "Revenue Break Even"
+                ? 'bg-green-500 text-black shadow-lg transform scale-105'
+                : 'bg-black text-white hover:bg-gray-800'
+                }`}
             >
               Revenue Break Even
             </button>
-            <button 
-              onClick={() => setActiveTab("Asset Market Value")} 
-              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
-                activeTab === "Asset Market Value" 
-                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
-                  : 'bg-black text-white hover:bg-gray-800'
-              }`}
+            <button
+              onClick={() => setActiveTab("Asset Market Value")}
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${activeTab === "Asset Market Value"
+                ? 'bg-green-500 text-black shadow-lg transform scale-105'
+                : 'bg-black text-white hover:bg-gray-800'
+                }`}
             >
               Asset Market Value
             </button>
-            <button 
-              onClick={() => setActiveTab("Herd Performance")} 
-              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
-                activeTab === "Herd Performance" 
-                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
-                  : 'bg-black text-white hover:bg-gray-800'
-              }`}
+            <button
+              onClick={() => setActiveTab("Herd Performance")}
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${activeTab === "Herd Performance"
+                ? 'bg-green-500 text-black shadow-lg transform scale-105'
+                : 'bg-black text-white hover:bg-gray-800'
+                }`}
             >
               Herd Performance
             </button>
-            <button 
-              onClick={() => setActiveTab("Annual Herd Revenue")} 
-              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
-                activeTab === "Annual Herd Revenue" 
-                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
-                  : 'bg-black text-white hover:bg-gray-800'
-              }`}
+            <button
+              onClick={() => setActiveTab("Annual Herd Revenue")}
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${activeTab === "Annual Herd Revenue"
+                ? 'bg-green-500 text-black shadow-lg transform scale-105'
+                : 'bg-black text-white hover:bg-gray-800'
+                }`}
             >
               Annual Herd Revenue
             </button>
-             <button 
-              onClick={() => setActiveTab("Break Even Timeline")} 
-              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${
-                activeTab === "Break Even Timeline" 
-                  ? 'bg-green-500 text-black shadow-lg transform scale-105' 
-                  : 'bg-black text-white hover:bg-gray-800'
-              }`}
+            <button
+              onClick={() => setActiveTab("Break Even Timeline")}
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${activeTab === "Break Even Timeline"
+                ? 'bg-green-500 text-black shadow-lg transform scale-105'
+                : 'bg-black text-white hover:bg-gray-800'
+                }`}
             >
               Break Even Timeline
             </button>
           </div>
-          
+
           <div className='w-full'>
             {activeTab === "Monthly Revenue Break" && (
               <MonthlyRevenueBreak
@@ -786,7 +816,7 @@ const CostEstimationTable = ({
                 formatCurrency={formatCurrency}
               />
             )}
-            
+
             {activeTab === "Break Even Timeline" && (
               <BreakEvenTimeline
                 treeData={treeData}
@@ -795,9 +825,12 @@ const CostEstimationTable = ({
                 setCpfToggle={setCpfToggle}
                 monthNames={monthNames}
                 formatCurrency={formatCurrency}
+                startYear={startYear}
+                endYear={endYear}
+                yearRange={yearRange}
               />
             )}
-            
+
             {activeTab === "Revenue Break Even" && (
               <RevenueBreakEven
                 treeData={treeData}
@@ -809,7 +842,7 @@ const CostEstimationTable = ({
                 formatCurrency={formatCurrency}
               />
             )}
-            
+
             {activeTab === "Asset Market Value" && (
               <>
                 <AssetMarketValue
@@ -821,6 +854,9 @@ const CostEstimationTable = ({
                   calculateDetailedAssetValue={calculateDetailedAssetValue}
                   assetMarketValue={assetMarketValue}
                   formatCurrency={formatCurrency}
+                  startYear={startYear}
+                  endYear={endYear}
+                  yearRange={yearRange}
                 />
                 <AssetMarketValue
                   treeData={treeData}
@@ -830,18 +866,24 @@ const CostEstimationTable = ({
                   assetMarketValue={assetMarketValue}
                   formatCurrency={formatCurrency}
                   isAssetMarketValue={true}
+                  startYear={startYear}
+                  endYear={endYear}
+                  yearRange={yearRange}
                 />
               </>
             )}
-            
+
             {activeTab === "Herd Performance" && (
               <HerdPerformance
                 yearlyData={yearlyData}
                 activeGraph={activeGraph}
                 setActiveGraph={setActiveGraph}
+                startYear={startYear}
+                endYear={endYear}
+                yearRange={yearRange}
               />
             )}
-            
+
             {activeTab === "Annual Herd Revenue" && (
               <AnnualHerdRevenue
                 cumulativeYearlyData={cumulativeYearlyData}
@@ -851,10 +893,13 @@ const CostEstimationTable = ({
                 formatCurrency={formatCurrency}
                 formatNumber={formatNumber}
                 treeData={treeData}
+                startYear={startYear}
+                endYear={endYear}
+                yearRange={yearRange}
               />
             )}
           </div>
-          
+
           <div className="h-10"></div>
           {/* Action Buttons */}
           <div className="text-center mb-12">

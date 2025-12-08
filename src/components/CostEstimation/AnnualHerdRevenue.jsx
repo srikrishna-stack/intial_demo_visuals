@@ -7,13 +7,12 @@ const AnnualHerdRevenue = ({
   setCpfToggle,
   formatCurrency,
   formatNumber,
-  treeData
+  treeData,
+  startYear,
+  endYear,
+  yearRange
 }) => {
-  // Find asset market value for each year
-  const getAssetValueForYear = (year) => {
-    const asset = assetMarketValue.find(a => a.year === year);
-    return asset ? asset.totalAssetValue : 0;
-  };
+  // Asset value calculation removed as per request
 
   return (
     <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden mb-16">
@@ -21,10 +20,10 @@ const AnnualHerdRevenue = ({
         <div className="h-10"></div>
         <h2 className="text-4xl font-bold mb-4 flex items-center gap-4">
           <span className="text-5xl">💰</span>
-          Annual Herd Revenue Breakdown (2026-2035)
+          Annual Herd Revenue Breakdown ({yearRange})
         </h2>
         <p className="text-blue-100 text-xl">Detailed year-by-year financial analysis based on actual herd growth with staggered cycles</p>
-        
+
         {/* CPF Toggle */}
         <div className="mt-6 flex justify-center">
           <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4">
@@ -65,25 +64,16 @@ const AnnualHerdRevenue = ({
                   {cpfToggle === "withCPF" ? "With CPF Deduction" : "Without CPF Deduction"}
                 </div>
               </th>
-              <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                <div className="text-xl">Asset Market Value</div>
-                <div className="text-base font-normal text-gray-500">Based on Age</div>
-              </th>
-              <th className="px-10 py-8 text-left text-lg font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                <div className="text-xl">Combined Value</div>
-                <div className="text-base font-normal text-gray-500">Revenue + Assets</div>
-              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {cumulativeYearlyData.map((data, index) => {
               const annualRevenue = cpfToggle === "withCPF" ? data.revenueWithCPF : data.revenueWithoutCPF;
-              const assetValue = getAssetValueForYear(data.year);
-              const combinedValue = annualRevenue + assetValue;
-              
+
+
               const growthRate = index > 0
-                ? ((annualRevenue - cumulativeYearlyData[index - 1][cpfToggle === "withCPF" ? "revenueWithCPF" : "revenueWithoutCPF"]) / 
-                   cumulativeYearlyData[index - 1][cpfToggle === "withCPF" ? "revenueWithCPF" : "revenueWithoutCPF"] * 100).toFixed(1)
+                ? ((annualRevenue - cumulativeYearlyData[index - 1][cpfToggle === "withCPF" ? "revenueWithCPF" : "revenueWithoutCPF"]) /
+                  cumulativeYearlyData[index - 1][cpfToggle === "withCPF" ? "revenueWithCPF" : "revenueWithoutCPF"] * 100).toFixed(1)
                 : 0;
 
               return (
@@ -121,22 +111,6 @@ const AnnualHerdRevenue = ({
                       </div>
                     )}
                   </td>
-                  <td className="px-10 py-8 whitespace-nowrap">
-                    <div className="text-3xl font-bold text-orange-600">
-                      {formatCurrency(assetValue)}
-                    </div>
-                    <div className="text-base text-gray-500 mt-2">
-                      Age-based valuation
-                    </div>
-                  </td>
-                  <td className="px-10 py-8 whitespace-nowrap">
-                    <div className="text-3xl font-bold text-indigo-600">
-                      {formatCurrency(combinedValue)}
-                    </div>
-                    <div className="text-base text-gray-500 mt-2">
-                      {annualRevenue > 0 ? ((assetValue / combinedValue * 100).toFixed(1)) : '100'}% assets
-                    </div>
-                  </td>
                 </tr>
               );
             })}
@@ -146,7 +120,7 @@ const AnnualHerdRevenue = ({
             <tr className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
               <td className="px-10 py-8">
                 <div className="text-2xl font-bold">Grand Total</div>
-                <div className="text-base opacity-80">10 Years (2026-2035)</div>
+                <div className="text-base opacity-80">{treeData.years} Years ({yearRange})</div>
               </td>
               <td className="px-10 py-8">
                 <div className="text-2xl font-bold">
@@ -156,29 +130,12 @@ const AnnualHerdRevenue = ({
               </td>
               <td className="px-10 py-8">
                 <div className="text-2xl font-bold">
-                  {formatCurrency(cpfToggle === "withCPF" 
+                  {formatCurrency(cpfToggle === "withCPF"
                     ? cumulativeYearlyData.reduce((sum, data) => sum + data.revenueWithCPF, 0)
                     : cumulativeYearlyData.reduce((sum, data) => sum + data.revenueWithoutCPF, 0)
                   )}
                 </div>
                 <div className="text-base opacity-80">total {cpfToggle === "withCPF" ? "net" : "gross"} revenue</div>
-              </td>
-              <td className="px-10 py-8">
-                <div className="text-2xl font-bold">
-                  {formatCurrency(assetMarketValue.reduce((sum, asset) => sum + asset.totalAssetValue, 0))}
-                </div>
-                <div className="text-base opacity-80">total asset value</div>
-              </td>
-              <td className="px-10 py-8">
-                <div className="text-2xl font-bold">
-                  {formatCurrency(
-                    (cpfToggle === "withCPF" 
-                      ? cumulativeYearlyData.reduce((sum, data) => sum + data.revenueWithCPF, 0)
-                      : cumulativeYearlyData.reduce((sum, data) => sum + data.revenueWithoutCPF, 0)
-                    ) + assetMarketValue.reduce((sum, asset) => sum + asset.totalAssetValue, 0)
-                  )}
-                </div>
-                <div className="text-base opacity-80">total combined value</div>
               </td>
             </tr>
             <div className="h-10"></div>
@@ -192,22 +149,16 @@ const AnnualHerdRevenue = ({
           <div className="bg-white rounded-xl p-6 border border-blue-200">
             <div className="text-lg font-bold text-blue-700 mb-2">Annual Revenue</div>
             <div className="text-sm text-gray-600">
-              {cpfToggle === "withCPF" 
+              {cpfToggle === "withCPF"
                 ? "Net revenue from milk sales after deducting CPF costs (₹13,000 per buffalo aged 3+ years)"
                 : "Gross revenue from milk sales before CPF deductions"
               }
             </div>
           </div>
-          <div className="bg-white rounded-xl p-6 border border-orange-200">
-            <div className="text-lg font-bold text-orange-700 mb-2">Asset Market Value</div>
-            <div className="text-sm text-gray-600">
-              Market value of your buffalo herd based on age-based pricing (₹3,000 for calves to ₹1,75,000 for mother buffaloes)
-            </div>
-          </div>
+
           <div className="bg-white rounded-xl p-6 border border-indigo-200">
-            <div className="text-lg font-bold text-indigo-700 mb-2">Combined Value</div>
             <div className="text-sm text-gray-600">
-              Total value = Annual Revenue + Asset Market Value. Represents the complete financial position for each year.
+              Total Annual Revenue represents the cash flow generated from milk sales in that specific year.
             </div>
           </div>
         </div>

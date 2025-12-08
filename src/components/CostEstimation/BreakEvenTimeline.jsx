@@ -6,16 +6,17 @@ const BreakEvenTimeline = ({
   cpfToggle,
   setCpfToggle,
   monthNames,
-  formatCurrency
+  formatCurrency,
+  yearRange
 }) => {
   // Calculate months to break-even
   const calculateMonthsToBreakEven = (breakEvenDate) => {
     if (!breakEvenDate) return null;
-    
+
     const startDate = new Date(treeData.startYear, treeData.startMonth, treeData.startDay || 1);
     const yearsDiff = breakEvenDate.getFullYear() - startDate.getFullYear();
     const monthsDiff = breakEvenDate.getMonth() - startDate.getMonth();
-    
+
     return yearsDiff * 12 + monthsDiff;
   };
 
@@ -26,7 +27,7 @@ const BreakEvenTimeline = ({
     <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-3xl p-10 shadow-2xl border border-green-200 mb-16">
       <h2 className="text-4xl font-bold text-green-800 mb-10 text-center flex items-center justify-center gap-4">
         <span className="text-5xl">🎯</span>
-        Break-Even Timeline Analysis 
+        Break-Even Timeline Analysis
       </h2>
 
       {/* CPF Toggle */}
@@ -70,8 +71,8 @@ const BreakEvenTimeline = ({
             <div className="text-3xl font-bold text-blue-600">{treeData.units}</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800 mb-2">Projection Period</div>
-            <div className="text-3xl font-bold text-purple-600">2026-2035</div>
+            <div className="text-gray-500 font-semibold mb-1">Projection Period</div>
+            <div className="text-3xl font-bold text-purple-600">{yearRange}</div>
           </div>
         </div>
       </div>
@@ -95,22 +96,22 @@ const BreakEvenTimeline = ({
             <div className="text-5xl mb-6">🎉</div>
             <div className="text-4xl font-bold mb-4">Your Investment is Now Risk-Free!</div>
             <div className="text-2xl font-semibold mb-6">
-              Break-Even WITH CPF Achieved on {breakEvenAnalysis.exactBreakEvenDateWithCPF.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              Break-Even WITH CPF Achieved on {breakEvenAnalysis.exactBreakEvenDateWithCPF.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
               })}
             </div>
-            
+
             <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm mb-6">
               <div className="text-3xl font-bold mb-2">
                 In Just {monthsToBreakEvenWithCPF} Months
               </div>
               <div className="text-xl opacity-90">
-                ({Math.floor(monthsToBreakEvenWithCPF/12)} years and {monthsToBreakEvenWithCPF%12} months)
+                ({Math.floor(monthsToBreakEvenWithCPF / 12)} years and {monthsToBreakEvenWithCPF % 12} months)
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
                 <div className="text-lg font-semibold mb-2">Investment Cycle</div>
@@ -119,7 +120,7 @@ const BreakEvenTimeline = ({
                 </div>
                 <div className="text-sm opacity-90">Month {breakEvenAnalysis.breakEvenMonthWithCPF + 1}</div>
               </div>
-              
+
               <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
                 <div className="text-lg font-semibold mb-2">Net Cumulative Revenue</div>
                 <div className="text-2xl font-bold">
@@ -127,7 +128,7 @@ const BreakEvenTimeline = ({
                 </div>
                 <div className="text-sm opacity-90">Total net milk sales to date</div>
               </div>
-              
+
               <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
                 <div className="text-lg font-semibold mb-2">Initial Investment</div>
                 <div className="text-2xl font-bold">
@@ -136,10 +137,10 @@ const BreakEvenTimeline = ({
                 <div className="text-sm opacity-90">Fully recovered!</div>
               </div>
             </div>
-            
+
             <div className="text-lg opacity-90 bg-black/20 rounded-xl p-4">
-              🎯 <span className="font-semibold">What this means:</span> From this date forward, all future revenue is pure profit. 
-              Your initial investment of {formatCurrency(breakEvenAnalysis.initialInvestment)} has been completely recovered 
+              🎯 <span className="font-semibold">What this means:</span> From this date forward, all future revenue is pure profit.
+              Your initial investment of {formatCurrency(breakEvenAnalysis.initialInvestment)} has been completely recovered
               through milk sales after CPF deductions. The buffalo herd you own now represents 100% net asset value.
             </div>
           </div>
@@ -151,22 +152,22 @@ const BreakEvenTimeline = ({
             <div className="text-5xl mb-6">📊</div>
             <div className="text-4xl font-bold mb-4">Break-Even WITHOUT CPF</div>
             <div className="text-2xl font-semibold mb-6">
-              Achieved on {breakEvenAnalysis.exactBreakEvenDateWithoutCPF.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              Achieved on {breakEvenAnalysis.exactBreakEvenDateWithoutCPF.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
               })}
             </div>
-            
+
             <div className="bg-white/20 rounded-xl p-6 backdrop-blur-sm mb-6">
               <div className="text-3xl font-bold mb-2">
                 In Just {monthsToBreakEvenWithoutCPF} Months
               </div>
               <div className="text-xl opacity-90">
-                ({Math.floor(monthsToBreakEvenWithoutCPF/12)} years and {monthsToBreakEvenWithoutCPF%12} months)
+                ({Math.floor(monthsToBreakEvenWithoutCPF / 12)} years and {monthsToBreakEvenWithoutCPF % 12} months)
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
                 <div className="text-lg font-semibold mb-2">Investment Cycle</div>
@@ -175,7 +176,7 @@ const BreakEvenTimeline = ({
                 </div>
                 <div className="text-sm opacity-90">Month {breakEvenAnalysis.breakEvenMonthWithoutCPF + 1}</div>
               </div>
-              
+
               <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
                 <div className="text-lg font-semibold mb-2">Gross Cumulative Revenue</div>
                 <div className="text-2xl font-bold">
@@ -183,7 +184,7 @@ const BreakEvenTimeline = ({
                 </div>
                 <div className="text-sm opacity-90">Total milk sales before CPF</div>
               </div>
-              
+
               <div className="bg-white/20 rounded-xl p-4 backdrop-blur-sm">
                 <div className="text-lg font-semibold mb-2">Initial Investment</div>
                 <div className="text-2xl font-bold">
@@ -192,10 +193,10 @@ const BreakEvenTimeline = ({
                 <div className="text-sm opacity-90">Fully recovered!</div>
               </div>
             </div>
-            
+
             <div className="text-lg opacity-90 bg-black/20 rounded-xl p-4">
-              🎯 <span className="font-semibold">What this means:</span> From this date forward, all future revenue exceeds your initial investment. 
-              Your initial investment of {formatCurrency(breakEvenAnalysis.initialInvestment)} has been completely recovered 
+              🎯 <span className="font-semibold">What this means:</span> From this date forward, all future revenue exceeds your initial investment.
+              Your initial investment of {formatCurrency(breakEvenAnalysis.initialInvestment)} has been completely recovered
               through milk sales alone (before CPF deductions).
             </div>
           </div>
@@ -219,17 +220,17 @@ const BreakEvenTimeline = ({
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-700">Break-Even Date (With CPF):</span>
                     <span className="text-xl font-bold text-green-600">
-                      {breakEvenAnalysis.exactBreakEvenDateWithCPF.toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
+                      {breakEvenAnalysis.exactBreakEvenDateWithCPF.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
                       })}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-700">Time to Break-Even:</span>
                     <span className="text-xl font-bold text-purple-600">
-                      {monthsToBreakEvenWithCPF} months ({Math.floor(monthsToBreakEvenWithCPF/12)} years {monthsToBreakEvenWithCPF%12} months)
+                      {monthsToBreakEvenWithCPF} months ({Math.floor(monthsToBreakEvenWithCPF / 12)} years {monthsToBreakEvenWithCPF % 12} months)
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -246,17 +247,17 @@ const BreakEvenTimeline = ({
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-700">Break-Even Date (Without CPF):</span>
                     <span className="text-xl font-bold text-green-600">
-                      {breakEvenAnalysis.exactBreakEvenDateWithoutCPF.toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
+                      {breakEvenAnalysis.exactBreakEvenDateWithoutCPF.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
                       })}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-700">Time to Break-Even:</span>
                     <span className="text-xl font-bold text-purple-600">
-                      {monthsToBreakEvenWithoutCPF} months ({Math.floor(monthsToBreakEvenWithoutCPF/12)} years {monthsToBreakEvenWithoutCPF%12} months)
+                      {monthsToBreakEvenWithoutCPF} months ({Math.floor(monthsToBreakEvenWithoutCPF / 12)} years {monthsToBreakEvenWithoutCPF % 12} months)
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -322,10 +323,10 @@ const BreakEvenTimeline = ({
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4">
-                <div 
-                  className="bg-purple-500 h-4 rounded-full" 
-                  style={{ 
-                    width: `${Math.min(100, ((cpfToggle === "withCPF" ? breakEvenAnalysis.finalCumulativeRevenueWithCPF : breakEvenAnalysis.finalCumulativeRevenueWithoutCPF) / breakEvenAnalysis.initialInvestment) * 100)}%` 
+                <div
+                  className="bg-purple-500 h-4 rounded-full"
+                  style={{
+                    width: `${Math.min(100, ((cpfToggle === "withCPF" ? breakEvenAnalysis.finalCumulativeRevenueWithCPF : breakEvenAnalysis.finalCumulativeRevenueWithoutCPF) / breakEvenAnalysis.initialInvestment) * 100)}%`
                   }}
                 ></div>
               </div>
@@ -336,21 +337,27 @@ const BreakEvenTimeline = ({
 
       {/* Break-Even Timeline Table (Matching Screenshot) */}
       <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg">
-        <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-          Break-Even Timeline (2026-2035) - {cpfToggle === "withCPF" ? "With CPF" : "Without CPF"}
+        <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+          Break-Even Timeline ({yearRange}) - {cpfToggle === "withCPF" ? "With CPF" : "Without CPF"}
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-gradient-to-r from-gray-50 to-green-50">
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Year</th>
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">
+              <tr className="bg-gradient-to-r from-gray-50 to-green-50 z-10 sticky top-0">
+                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b shadow-sm">Year</th>
+                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b shadow-sm">
                   {cpfToggle === "withCPF" ? "Annual Revenue (Net)" : "Annual Revenue (Gross)"}
                 </th>
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">
+                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b shadow-sm">
                   {cpfToggle === "withCPF" ? "Cumulative (Net)" : "Cumulative (Gross)"}
                 </th>
-                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Investment Recovery</th>
+                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b shadow-sm">
+                  Asset Market Value
+                </th>
+                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b shadow-sm">
+                  Total Value (Rev + Asset)
+                </th>
+                <th className="px-6 py-4 text-left font-bold text-gray-700 border-b shadow-sm">Investment Recovery</th>
               </tr>
             </thead>
             <tbody>
@@ -361,14 +368,27 @@ const BreakEvenTimeline = ({
                 const status = cpfToggle === "withCPF" ? data.statusWithCPF : data.statusWithoutCPF;
 
                 // Format year display
-                const yearDisplay = data.year === treeData.startYear 
-                  ? `${data.year}\nYear 1` 
+                const yearDisplay = data.year === treeData.startYear
+                  ? `${data.year}\nYear 1`
                   : `${data.year}\nYear ${index + 1}`;
 
+                // Determine if this is the break-even year row for highlighting
+                const isBreakEvenRow = cpfToggle === "withCPF" ? data.isBreakEvenWithCPF : data.isBreakEvenWithoutCPF;
+                const rowClass = isBreakEvenRow
+                  ? "bg-green-50 border-2 border-green-400 relative"
+                  : "hover:bg-green-50 transition-colors";
+
                 return (
-                  <tr key={data.year} className="hover:bg-green-50 transition-colors">
+                  <tr key={data.year} className={rowClass}>
                     <td className="px-6 py-4 border-b">
-                      <div className="font-semibold text-gray-900 whitespace-pre-line">{yearDisplay}</div>
+                      <div className="font-semibold text-gray-900 whitespace-pre-line">
+                        {yearDisplay}
+                        {isBreakEvenRow && (
+                          <span className="block mt-1 text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full w-fit">
+                            ★ Break Even
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 border-b font-semibold text-green-600">
                       {formatCurrency(annualRevenue)}
@@ -380,6 +400,12 @@ const BreakEvenTimeline = ({
                     </td>
                     <td className="px-6 py-4 border-b font-semibold text-blue-600">
                       {formatCurrency(cumulativeRevenue)}
+                    </td>
+                    <td className="px-6 py-4 border-b font-semibold text-purple-600">
+                      {formatCurrency(data.assetValue)}
+                    </td>
+                    <td className="px-6 py-4 border-b font-bold text-emerald-600">
+                      {formatCurrency(cpfToggle === "withCPF" ? data.totalValueWithCPF : data.totalValueWithoutCPF)}
                     </td>
                     <td className="px-6 py-4 border-b">
                       <div className="flex items-center gap-3 mb-2">
@@ -396,8 +422,8 @@ const BreakEvenTimeline = ({
                       <span className={`px-3 py-1 rounded-full text-sm font-semibold inline-block
                         ${status.includes('Break-Even') ? 'bg-green-100 text-green-800' :
                           status.includes('75%') ? 'bg-yellow-100 text-yellow-800' :
-                          status.includes('50%') ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-600'}`}>
+                            status.includes('50%') ? 'bg-blue-100 text-blue-800' :
+                              'bg-gray-100 text-gray-600'}`}>
                         {status}
                       </span>
                     </td>
@@ -405,6 +431,48 @@ const BreakEvenTimeline = ({
                 );
               })}
             </tbody>
+            {/* Totals Footer Row */}
+            <tfoot className="bg-gray-100 font-bold text-gray-800">
+              <tr>
+                <td className="px-6 py-4 border-t-2 border-gray-300 text-lg">TOTALS</td>
+                <td className="px-6 py-4 border-t-2 border-gray-300 text-green-700 text-lg">
+                  {formatCurrency(
+                    breakEvenAnalysis.breakEvenData.reduce((sum, data) =>
+                      sum + (cpfToggle === "withCPF" ? data.annualRevenueWithCPF : data.annualRevenueWithoutCPF), 0
+                    )
+                  )}
+                  {cpfToggle === "withCPF" && (
+                    <div className="text-xs text-gray-500 font-normal">
+                      Total CPF Paid: {formatCurrency(breakEvenAnalysis.breakEvenData.reduce((sum, data) => sum + data.cpfCost, 0))}
+                    </div>
+                  )}
+                </td>
+                <td className="px-6 py-4 border-t-2 border-gray-300 text-blue-700 text-lg">
+                  {formatCurrency(cpfToggle === "withCPF" ? breakEvenAnalysis.finalCumulativeRevenueWithCPF : breakEvenAnalysis.finalCumulativeRevenueWithoutCPF)}
+                </td>
+                <td className="px-6 py-4 border-t-2 border-gray-300 text-purple-700 text-lg">
+                  {/* Final Asset Value (from last year) */}
+                  {formatCurrency(breakEvenAnalysis.breakEvenData[breakEvenAnalysis.breakEvenData.length - 1]?.assetValue || 0)}
+                </td>
+                <td className="px-6 py-4 border-t-2 border-gray-300 text-emerald-700 text-xl">
+                  {/* Final Total Value */}
+                  {formatCurrency(
+                    (cpfToggle === "withCPF" ? breakEvenAnalysis.finalCumulativeRevenueWithCPF : breakEvenAnalysis.finalCumulativeRevenueWithoutCPF) +
+                    (breakEvenAnalysis.breakEvenData[breakEvenAnalysis.breakEvenData.length - 1]?.assetValue || 0)
+                  )}
+                </td>
+                <td className="px-6 py-4 border-t-2 border-gray-300 text-gray-600">
+                  <div className="text-xs uppercase tracking-wider">Final Outcome</div>
+                  <div className="text-lg text-emerald-600">
+                    {((
+                      ((cpfToggle === "withCPF" ? breakEvenAnalysis.finalCumulativeRevenueWithCPF : breakEvenAnalysis.finalCumulativeRevenueWithoutCPF) +
+                        (breakEvenAnalysis.breakEvenData[breakEvenAnalysis.breakEvenData.length - 1]?.assetValue || 0)) /
+                      breakEvenAnalysis.initialInvestment
+                    ) * 100).toFixed(1)}% ROI
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
