@@ -916,6 +916,7 @@ const CostEstimationTable = ({
             {activeTab === "Asset Market Value" && (
               <>
                 <AssetMarketValue
+                
                   treeData={treeData}
                   buffaloDetails={buffaloDetails}
                   calculateAgeInMonths={calculateAgeInMonths}
@@ -927,18 +928,7 @@ const CostEstimationTable = ({
                   startYear={startYear}
                   endYear={endYear}
                   yearRange={yearRange}
-                />
-                <AssetMarketValue
-                  treeData={treeData}
-                  buffaloDetails={buffaloDetails}
-                  calculateAgeInMonths={calculateAgeInMonths}
-                  getBuffaloValueByAge={getBuffaloValueByAge}
-                  assetMarketValue={assetMarketValue}
-                  formatCurrency={formatCurrency}
                   isAssetMarketValue={true}
-                  startYear={startYear}
-                  endYear={endYear}
-                  yearRange={yearRange}
                 />
               </>
             )}

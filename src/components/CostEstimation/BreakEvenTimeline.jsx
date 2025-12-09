@@ -76,7 +76,7 @@ const BreakEvenTimeline = ({
           {breakEvenAnalysis.exactBreakEvenDateWithCPF && (
             <div className="bg-gray-800 rounded-xl p-4 text-white shadow-sm h-full">
               <div className="text-center mb-3">
-                <div className="text-sm font-bold mb-1">Your Investment is Now Risk-Free!</div>
+                <div className="text-sm font-bold mb-1">Your Investment</div>
                 <div className="text-xs text-gray-300">
                   Break-Even WITH CPF Achieved on {breakEvenAnalysis.exactBreakEvenDateWithCPF.toLocaleDateString('en-US', {
                     year: 'numeric',
