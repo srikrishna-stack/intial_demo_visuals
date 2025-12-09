@@ -69,8 +69,7 @@ const NonProducingBuffaloGraph = ({ yearlyData }) => {
   return (
     <div className="bg-white rounded-3xl p-6 shadow-2xl border border-gray-100 w-full">
       <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center justify-center gap-3">
-        <BarChart3 className="text-orange-500" size={28} />
-        Non-Producing Buffalo Analysis
+        Producing And Non-Producing Buffalo Analysis
       </h3>
 
       <div className="h-[400px]">

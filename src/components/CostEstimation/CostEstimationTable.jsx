@@ -37,7 +37,7 @@ const CostEstimationTable = ({
   // Shared calculation functions
   const calculateAgeInMonths = (buffalo, targetYear, targetMonth = 0) => {
     const birthYear = buffalo.birthYear;
-    const birthMonth = buffalo.birthMonth || 0;
+    const birthMonth = buffalo.acquisitionMonth || 0;
     const totalMonths = (targetYear - birthYear) * 12 + (targetMonth - birthMonth);
     return Math.max(0, totalMonths);
   };
@@ -201,7 +201,6 @@ const CostEstimationTable = ({
 
       cumulativeData.push({
         ...yearData,
-        cumulativeRevenueWithoutCPF: cumulativeRevenueWithoutCPF,
         cumulativeRevenueWithCPF: cumulativeRevenueWithCPF,
         cumulativeCPFCost: cumulativeRevenueWithoutCPF - cumulativeRevenueWithCPF
       });
@@ -356,22 +355,13 @@ const CostEstimationTable = ({
   const { monthlyRevenue, investorMonthlyRevenue, buffaloDetails, buffaloValuesByYear } = calculateDetailedMonthlyRevenue();
 
   const calculateBreakEvenAnalysis = () => {
-    let cumulativeRevenueWithoutCPF = 0;
-    let cumulativeRevenueWithCPF = 0;
     const breakEvenData = [];
-    let breakEvenYearWithoutCPF = null;
-    let breakEvenMonthWithoutCPF = null;
     let breakEvenYearWithCPF = null;
     let breakEvenMonthWithCPF = null;
-    let exactBreakEvenDateWithoutCPF = null;
     let exactBreakEvenDateWithCPF = null;
-    
-    // For Revenue Break Even - Only compare cumulative revenue (without asset value)
-    let revenueBreakEvenYearWithoutCPF = null;
-    let revenueBreakEvenMonthWithoutCPF = null;
+
     let revenueBreakEvenYearWithCPF = null;
     let revenueBreakEvenMonthWithCPF = null;
-    let revenueExactBreakEvenDateWithoutCPF = null;
     let revenueExactBreakEvenDateWithCPF = null;
 
     // Helper to calculate total asset value for a specific point in time
@@ -386,33 +376,6 @@ const CostEstimationTable = ({
       });
       return totalValue;
     };
-
-    // Break Even Timeline Calculation (Revenue + Asset Value)
-    for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
-      for (let month = 0; month < 12; month++) {
-        cumulativeRevenueWithoutCPF += investorMonthlyRevenue[year][month];
-
-        // Calculate Asset Value for this month
-        const currentAssetValue = calculateTotalAssetValueForMonth(year, month);
-        const totalValueWithoutCPF = cumulativeRevenueWithoutCPF + currentAssetValue;
-
-        if (totalValueWithoutCPF >= initialInvestment.totalInvestment && !breakEvenYearWithoutCPF) {
-          breakEvenYearWithoutCPF = year;
-          breakEvenMonthWithoutCPF = month;
-
-          const startDate = new Date(treeData.startYear, treeData.startMonth, treeData.startDay || 1);
-          const monthsSinceStart = (year - treeData.startYear) * 12 + (month - treeData.startMonth);
-          const breakEvenDate = new Date(startDate);
-          breakEvenDate.setMonth(breakEvenDate.getMonth() + monthsSinceStart);
-
-          const lastDayOfMonth = new Date(breakEvenDate.getFullYear(), breakEvenDate.getMonth() + 1, 0).getDate();
-          breakEvenDate.setDate(lastDayOfMonth);
-
-          exactBreakEvenDateWithoutCPF = breakEvenDate;
-        }
-      }
-      if (breakEvenYearWithoutCPF) break;
-    }
 
     // Reset for With CPF calculation (Break Even Timeline)
     let tempCumulativeWithCPF = 0;
@@ -444,31 +407,6 @@ const CostEstimationTable = ({
       if (breakEvenYearWithCPF) break;
     }
 
-    // Revenue Break Even Calculation (Only Cumulative Revenue)
-    let revenueCumulativeWithoutCPF = 0;
-    let revenueCumulativeWithCPF = 0;
-    for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
-      for (let month = 0; month < 12; month++) {
-        revenueCumulativeWithoutCPF += investorMonthlyRevenue[year][month];
-        
-        if (revenueCumulativeWithoutCPF >= initialInvestment.totalInvestment && !revenueBreakEvenYearWithoutCPF) {
-          revenueBreakEvenYearWithoutCPF = year;
-          revenueBreakEvenMonthWithoutCPF = month;
-
-          const startDate = new Date(treeData.startYear, treeData.startMonth, treeData.startDay || 1);
-          const monthsSinceStart = (year - treeData.startYear) * 12 + (month - treeData.startMonth);
-          const breakEvenDate = new Date(startDate);
-          breakEvenDate.setMonth(breakEvenDate.getMonth() + monthsSinceStart);
-
-          const lastDayOfMonth = new Date(breakEvenDate.getFullYear(), breakEvenDate.getMonth() + 1, 0).getDate();
-          breakEvenDate.setDate(lastDayOfMonth);
-
-          revenueExactBreakEvenDateWithoutCPF = breakEvenDate;
-        }
-      }
-      if (revenueBreakEvenYearWithoutCPF) break;
-    }
-
     // Reset for Revenue Break Even with CPF
     let revenueTempCumulativeWithCPF = 0;
     for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
@@ -495,49 +433,24 @@ const CostEstimationTable = ({
       if (revenueBreakEvenYearWithCPF) break;
     }
 
-    let yearlyCumulativeWithoutCPF = 0;
     let yearlyCumulativeWithCPF = 0;
 
     for (let i = 0; i < cumulativeYearlyData.length; i++) {
       const yearData = cumulativeYearlyData[i];
-      yearlyCumulativeWithoutCPF = yearData.cumulativeRevenueWithoutCPF;
       yearlyCumulativeWithCPF = yearData.cumulativeRevenueWithCPF;
 
       // Calculate Year-End Asset Value for Table
       const yearEndAssetValue = calculateTotalAssetValueForMonth(yearData.year, 11); // December value
 
-      const totalValueWithoutCPF = yearlyCumulativeWithoutCPF + yearEndAssetValue;
       const totalValueWithCPF = yearlyCumulativeWithCPF + yearEndAssetValue;
 
       // For Revenue Break Even (only revenue)
-      const revenueOnlyPercentageWithoutCPF = (yearlyCumulativeWithoutCPF / initialInvestment.totalInvestment) * 100;
       const revenueOnlyPercentageWithCPF = (yearlyCumulativeWithCPF / initialInvestment.totalInvestment) * 100;
-
-      const recoveryPercentageWithoutCPF = (totalValueWithoutCPF / initialInvestment.totalInvestment) * 100;
       const recoveryPercentageWithCPF = (totalValueWithCPF / initialInvestment.totalInvestment) * 100;
-
-      let statusWithoutCPF = "in Progress";
-      let revenueOnlyStatusWithoutCPF = "in Progress";
-      
-      if (recoveryPercentageWithoutCPF >= 100) {
-        statusWithoutCPF = "✔ Break-Even";
-      } else if (recoveryPercentageWithoutCPF >= 75) {
-        statusWithoutCPF = "75% Recovered";
-      } else if (recoveryPercentageWithoutCPF >= 50) {
-        statusWithoutCPF = "50% Recovered";
-      }
-
-      if (revenueOnlyPercentageWithoutCPF >= 100) {
-        revenueOnlyStatusWithoutCPF = "✔ Break-Even";
-      } else if (revenueOnlyPercentageWithoutCPF >= 75) {
-        revenueOnlyStatusWithoutCPF = "75% Recovered";
-      } else if (revenueOnlyPercentageWithoutCPF >= 50) {
-        revenueOnlyStatusWithoutCPF = "50% Recovered";
-      }
 
       let statusWithCPF = "in Progress";
       let revenueOnlyStatusWithCPF = "in Progress";
-      
+
       if (recoveryPercentageWithCPF >= 100) {
         statusWithCPF = "✔ Break-Even";
       } else if (recoveryPercentageWithCPF >= 75) {
@@ -555,50 +468,36 @@ const CostEstimationTable = ({
       }
 
       breakEvenData.push({
+
         year: yearData.year,
-        annualRevenueWithoutCPF: yearData.revenueWithoutCPF,
         annualRevenueWithCPF: yearData.revenueWithCPF,
         cpfCost: yearData.cpfCost,
-        cumulativeRevenueWithoutCPF: yearlyCumulativeWithoutCPF,
         cumulativeRevenueWithCPF: yearlyCumulativeWithCPF,
         assetValue: yearEndAssetValue,
-        totalValueWithoutCPF: totalValueWithoutCPF,
         totalValueWithCPF: totalValueWithCPF,
-        recoveryPercentageWithoutCPF: recoveryPercentageWithoutCPF,
         recoveryPercentageWithCPF: recoveryPercentageWithCPF,
-        revenueOnlyPercentageWithoutCPF: revenueOnlyPercentageWithoutCPF,
         revenueOnlyPercentageWithCPF: revenueOnlyPercentageWithCPF,
-        statusWithoutCPF: statusWithoutCPF,
         statusWithCPF: statusWithCPF,
-        revenueOnlyStatusWithoutCPF: revenueOnlyStatusWithoutCPF,
         revenueOnlyStatusWithCPF: revenueOnlyStatusWithCPF,
-        isBreakEvenWithoutCPF: breakEvenYearWithoutCPF === yearData.year,
         isBreakEvenWithCPF: breakEvenYearWithCPF === yearData.year,
-        isRevenueBreakEvenWithoutCPF: revenueBreakEvenYearWithoutCPF === yearData.year,
         isRevenueBreakEvenWithCPF: revenueBreakEvenYearWithCPF === yearData.year,
         totalBuffaloes: yearData.totalBuffaloes,
         matureBuffaloes: yearData.matureBuffaloes
       });
     }
 
+
     return {
       breakEvenData,
       // Break Even Timeline data
-      breakEvenYearWithoutCPF,
-      breakEvenMonthWithoutCPF,
       breakEvenYearWithCPF,
       breakEvenMonthWithCPF,
-      exactBreakEvenDateWithoutCPF,
       exactBreakEvenDateWithCPF,
       // Revenue Break Even data
-      revenueBreakEvenYearWithoutCPF,
-      revenueBreakEvenMonthWithoutCPF,
       revenueBreakEvenYearWithCPF,
       revenueBreakEvenMonthWithCPF,
-      revenueExactBreakEvenDateWithoutCPF,
       revenueExactBreakEvenDateWithCPF,
       initialInvestment: initialInvestment.totalInvestment,
-      finalCumulativeRevenueWithoutCPF: cumulativeYearlyData[cumulativeYearlyData.length - 1]?.cumulativeRevenueWithoutCPF || 0,
       finalCumulativeRevenueWithCPF: cumulativeYearlyData[cumulativeYearlyData.length - 1]?.cumulativeRevenueWithCPF || 0
     };
   };
@@ -904,11 +803,8 @@ const CostEstimationTable = ({
                 setCpfToggle={setCpfToggle}
                 formatCurrency={formatCurrency}
                 // Pass the revenue-only break-even dates
-                revenueBreakEvenYearWithoutCPF={breakEvenAnalysis.revenueBreakEvenYearWithoutCPF}
-                revenueBreakEvenMonthWithoutCPF={breakEvenAnalysis.revenueBreakEvenMonthWithoutCPF}
                 revenueBreakEvenYearWithCPF={breakEvenAnalysis.revenueBreakEvenYearWithCPF}
                 revenueBreakEvenMonthWithCPF={breakEvenAnalysis.revenueBreakEvenMonthWithCPF}
-                revenueExactBreakEvenDateWithoutCPF={breakEvenAnalysis.revenueExactBreakEvenDateWithoutCPF}
                 revenueExactBreakEvenDateWithCPF={breakEvenAnalysis.revenueExactBreakEvenDateWithCPF}
               />
             )}
@@ -916,7 +812,6 @@ const CostEstimationTable = ({
             {activeTab === "Asset Market Value" && (
               <>
                 <AssetMarketValue
-                
                   treeData={treeData}
                   buffaloDetails={buffaloDetails}
                   calculateAgeInMonths={calculateAgeInMonths}
@@ -928,7 +823,6 @@ const CostEstimationTable = ({
                   startYear={startYear}
                   endYear={endYear}
                   yearRange={yearRange}
-                  isAssetMarketValue={true}
                 />
               </>
             )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const AssetMarketValue = ({
   treeData,
@@ -15,30 +15,32 @@ const AssetMarketValue = ({
   yearRange
 }) => {
   const [selectedYear, setSelectedYear] = useState(treeData.startYear);
+  const [selectedAssetData, setSelectedAssetData] = useState(null);
+  const [totalBuffaloes, setTotalBuffaloes] = useState(0);
 
-  // Calculate total buffaloes for each year based on assetMarketValue data
-  const calculateBuffaloCountByYear = (year) => {
-    // Calculate buffaloes for the selected year from the assetMarketValue data
-    const assetData = assetMarketValue.find(a => a.year === year);
+  // Update selected asset data when year changes
+  useEffect(() => {
+    const assetData = assetMarketValue.find(a => a.year === selectedYear) || assetMarketValue[0];
+    setSelectedAssetData(assetData);
     
     if (assetData) {
-      // Sum up all age category counts from the assetMarketValue data
-      let totalCount = 0;
+      // Calculate total buffaloes from age categories
+      let total = 0;
       Object.values(assetData.ageCategories || {}).forEach(category => {
-        totalCount += category.count || 0;
+        total += category.count || 0;
       });
-      return totalCount;
+      setTotalBuffaloes(total);
+    } else {
+      // Fallback: calculate from buffaloDetails
+      let count = 0;
+      Object.values(buffaloDetails).forEach(buffalo => {
+        if (selectedYear >= buffalo.birthYear) {
+          count++;
+        }
+      });
+      setTotalBuffaloes(count);
     }
-    
-    // Fallback: calculate from buffaloDetails
-    let count = 0;
-    Object.values(buffaloDetails).forEach(buffalo => {
-      if (year >= buffalo.birthYear) {
-        count++;
-      }
-    });
-    return count;
-  };
+  }, [selectedYear, assetMarketValue, buffaloDetails]);
 
   // Age-Based Valuation Breakdown function for selected year
   const calculateDetailedAssetValueForYear = (year) => {
@@ -103,10 +105,54 @@ const AssetMarketValue = ({
     return { ageGroups, totalValue, totalCount };
   };
 
+  // Helper function to get category count from asset data
+  const getCategoryCount = (categoryKey) => {
+    if (!selectedAssetData || !selectedAssetData.ageCategories) return 0;
+    
+    // Try multiple possible key formats
+    const keys = [
+      categoryKey,
+      categoryKey.replace(' (Calves)', ''),
+      categoryKey.replace(' (Mother Buffalo)', ''),
+      categoryKey.includes('0-6') ? '0-6 months' : undefined,
+      categoryKey.includes('60+') ? '60+ months' : undefined
+    ].filter(Boolean);
+    
+    for (const key of keys) {
+      if (selectedAssetData.ageCategories[key]) {
+        return selectedAssetData.ageCategories[key].count || 0;
+      }
+    }
+    
+    return 0;
+  };
+
+  // Helper function to get category value from asset data
+  const getCategoryValue = (categoryKey) => {
+    if (!selectedAssetData || !selectedAssetData.ageCategories) return 0;
+    
+    const keys = [
+      categoryKey,
+      categoryKey.replace(' (Calves)', ''),
+      categoryKey.replace(' (Mother Buffalo)', ''),
+      categoryKey.includes('0-6') ? '0-6 months' : undefined,
+      categoryKey.includes('60+') ? '60+ months' : undefined
+    ].filter(Boolean);
+    
+    for (const key of keys) {
+      if (selectedAssetData.ageCategories[key]) {
+        return selectedAssetData.ageCategories[key].value || 0;
+      }
+    }
+    
+    return 0;
+  };
+
   if (isAssetMarketValue) {
     // This is the Asset Market Value component
-    const selectedAssetValue = assetMarketValue.find(a => a.year === selectedYear) || assetMarketValue[0];
-    const totalBuffaloes = selectedAssetValue?.totalBuffaloes || calculateBuffaloCountByYear(selectedYear);
+    if (!selectedAssetData) {
+      return <div>Loading asset data...</div>;
+    }
 
     return (
       <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-3xl p-8 shadow-xl border border-gray-200 mb-16 mx-4 lg:mx-20">
@@ -138,10 +184,13 @@ const AssetMarketValue = ({
               {/* Total Value Display */}
               <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl p-5 text-white flex-1 min-w-0 text-center shadow-md">
                 <div className="text-xs font-semibold mb-1 text-blue-100">Total Asset Value</div>
-                <div className="text-2xl font-bold mb-1">{formatCurrency(selectedAssetValue?.totalAssetValue || 0)}</div>
+                <div className="text-2xl font-bold mb-1">
+                  {formatCurrency(selectedAssetData.totalAssetValue || 0)}
+                </div>
                 <div className="text-xs text-blue-200">
                   {totalBuffaloes} buffaloes
-                  {selectedAssetValue?.motherBuffaloes ? ` · ${selectedAssetValue.motherBuffaloes} mothers` : ''}
+                  {getCategoryCount('60+ months (Mother Buffalo)') > 0 ? 
+                    ` · ${getCategoryCount('60+ months (Mother Buffalo)')} mothers` : ''}
                 </div>
               </div>
             </div>
@@ -221,7 +270,9 @@ const AssetMarketValue = ({
                   <td className="px-4 py-4 font-semibold text-sm">Total</td>
                   <td className="px-4 py-4 font-semibold text-sm">-</td>
                   <td className="px-4 py-4 font-semibold text-sm">{totalBuffaloes}</td>
-                  <td className="px-4 py-4 font-semibold text-sm">{formatCurrency(selectedAssetValue?.totalAssetValue || 0)}</td>
+                  <td className="px-4 py-4 font-semibold text-sm">
+                    {formatCurrency(selectedAssetData.totalAssetValue || 0)}
+                  </td>
                   <td className="px-4 py-4 font-semibold text-sm">100%</td>
                 </tr>
               </tfoot>
@@ -229,14 +280,14 @@ const AssetMarketValue = ({
           </div>
         </div>
 
-        {/* Compact Age Category Table - Fixed with year and total asset value in title */}
+        {/* Compact Age Category Table - Using assetMarketValue data */}
         <div className="bg-white rounded-xl p-6 border border-gray-300 shadow-sm mb-8 mx-4 lg:mx-20">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold text-gray-800">
               Age-Based Asset Breakdown - {selectedYear}
             </h3>
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-2 rounded-lg font-bold">
-              {formatCurrency(selectedAssetValue?.totalAssetValue || 0)}
+              {formatCurrency(selectedAssetData.totalAssetValue || 0)}
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -263,10 +314,12 @@ const AssetMarketValue = ({
                   { category: '48-60 months', unitValue: 150000 },
                   { category: '60+ months (Mother Buffalo)', unitValue: 175000 }
                 ].map((item, index) => {
-                  const count = selectedAssetValue?.ageCategories?.[item.category]?.count || 0;
-                  const value = selectedAssetValue?.ageCategories?.[item.category]?.value || 0;
-                  const percentage = selectedAssetValue?.totalAssetValue > 0
-                    ? (value / selectedAssetValue.totalAssetValue * 100).toFixed(1)
+                  const count = getCategoryCount(item.category);
+                  console.log(count);
+                  
+                  const value = getCategoryValue(item.category);
+                  const percentage = selectedAssetData.totalAssetValue > 0
+                    ? (value / selectedAssetData.totalAssetValue * 100).toFixed(1)
                     : 0;
 
                   return (
@@ -305,14 +358,16 @@ const AssetMarketValue = ({
                   <td className="px-6 py-4 font-bold">Total</td>
                   <td className="px-6 py-4 font-bold">-</td>
                   <td className="px-6 py-4 font-bold">{totalBuffaloes}</td>
-                  <td className="px-6 py-4 font-bold">{formatCurrency(selectedAssetValue?.totalAssetValue || 0)}</td>
+                  <td className="px-6 py-4 font-bold">
+                    {formatCurrency(selectedAssetData.totalAssetValue || 0)}
+                  </td>
                   <td className="px-6 py-4 font-bold">100%</td>
                 </tr>
               </tfoot>
             </table>
           </div>
         </div>
-
+               
         {/* Year-wise Age Category Distribution Table */}
         <div className="bg-white rounded-xl p-6 border border-gray-300 shadow-sm mb-8 mx-4 lg:mx-20">
           <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">
@@ -338,19 +393,26 @@ const AssetMarketValue = ({
                 </tr>
               </thead>
               <tbody>
+                 
                 {assetMarketValue.slice(0, 10).map((asset, yearIndex) => {
-                  const yearBuffaloCount = asset.totalBuffaloes || calculateBuffaloCountByYear(asset.year);
+                  // Calculate total buffaloes for this year
+                  let yearTotalBuffaloes = 0;
+                  if (asset.ageCategories) {
+                    Object.values(asset.ageCategories).forEach(category => {
+                      yearTotalBuffaloes += category.count || 0;
+                    });
+                  }
+                  // console.log(assetMarketValue)
                   return (
                     <tr key={yearIndex} className="hover:bg-blue-50 transition-colors">
                       <td className="px-6 py-4 border-b font-semibold text-gray-900">
                         Year {yearIndex + 1} ({asset.year})
                       </td>
                       <td className="px-6 py-4 border-b text-center font-bold text-gray-800">
-                        {yearBuffaloCount}
+                        {asset.totalBuffaloes}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
-                        {asset.ageCategories?.['0-6 months (Calves)']?.count || 
-                         asset.ageCategories?.['0-6 months']?.count || 0}
+                        {asset.ageCategories?.['0-6 months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
                         {asset.ageCategories?.['6-12 months']?.count || 0}
@@ -377,8 +439,7 @@ const AssetMarketValue = ({
                         {asset.ageCategories?.['48-60 months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-red-600">
-                        {asset.ageCategories?.['60+ months (Mother Buffalo)']?.count || 
-                         asset.ageCategories?.['60+ months']?.count || 0}
+                        {asset.ageCategories?.['60+ months (Mother Buffalo)']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-semibold text-green-600">
                         {formatCurrency(asset.totalAssetValue || 0)}
@@ -403,13 +464,19 @@ const AssetMarketValue = ({
             </div>
             <div className="text-lg font-semibold text-blue-700">Initial Asset Value ({startYear})</div>
             <div className="text-sm text-gray-600 mt-2">
-              {assetMarketValue[0]?.totalBuffaloes || 0} buffaloes
+              {(() => {
+                const initialAsset = assetMarketValue[0];
+                if (!initialAsset || !initialAsset.ageCategories) return "0 buffaloes";
+                let total = 0;
+                Object.values(initialAsset.ageCategories).forEach(cat => {
+                  total += cat.count || 0;
+                });
+                return `${total} buffaloes`;
+              })()}
               <br />
-              {assetMarketValue[0]?.ageCategories?.['60+ months (Mother Buffalo)']?.count || 
-               assetMarketValue[0]?.ageCategories?.['60+ months']?.count || 0} mother buffaloes (60+ months)
+              {assetMarketValue[0]?.ageCategories?.['60+ months']?.count || 0} mother buffaloes (60+ months)
               <br />
-              {assetMarketValue[0]?.ageCategories?.['0-6 months (Calves)']?.count || 
-               assetMarketValue[0]?.ageCategories?.['0-6 months']?.count || 0} newborn calves
+              {assetMarketValue[0]?.ageCategories?.['0-6 months']?.count || 0} newborn calves
             </div>
           </div>
 
@@ -420,10 +487,17 @@ const AssetMarketValue = ({
             </div>
             <div className="text-lg font-semibold opacity-90">Final Asset Value ({endYear})</div>
             <div className="text-sm opacity-80 mt-2">
-              {assetMarketValue[assetMarketValue.length - 1]?.totalBuffaloes || 0} buffaloes
+              {(() => {
+                const finalAsset = assetMarketValue[assetMarketValue.length - 1];
+                if (!finalAsset || !finalAsset.ageCategories) return "0 buffaloes";
+                let total = 0;
+                Object.values(finalAsset.ageCategories).forEach(cat => {
+                  total += cat.count || 0;
+                });
+                return `${total} buffaloes`;
+              })()}
               <br />
-              {assetMarketValue[assetMarketValue.length - 1]?.ageCategories?.['60+ months (Mother Buffalo)']?.count || 
-               assetMarketValue[assetMarketValue.length - 1]?.ageCategories?.['60+ months']?.count || 0} mother buffaloes (60+ months)
+              {assetMarketValue[assetMarketValue.length - 1]?.ageCategories?.['60+ months']?.count || 0} mother buffaloes (60+ months)
               <br />
               Multiple generations with age-based valuation
             </div>
@@ -463,7 +537,9 @@ const AssetMarketValue = ({
 
   // This is the Buffalo Value By Age component
   const detailedAssetValue = calculateDetailedAssetValue(selectedYear);
-  const buffaloCountForYear = calculateBuffaloCountByYear(selectedYear);
+  const buffaloCountForYear = Object.values(buffaloDetails).filter(buffalo => 
+    selectedYear >= buffalo.birthYear
+  ).length;
 
   return (
     <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-3xl p-8 shadow-xl border border-gray-200 mb-16 mx-4 lg:mx-25">

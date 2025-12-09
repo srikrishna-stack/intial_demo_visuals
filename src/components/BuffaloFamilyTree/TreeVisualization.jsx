@@ -14,36 +14,40 @@ const TreeVisualization = ({
   treeContainerRef,
   isFullScreen,
   toggleFullScreen,
-  handleFitToScreen,
+  handleFitToScreen, // New prop
 }) => {
   if (!treeData) {
     return (
       <div className="flex-1 flex items-center justify-center p-10">
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-4 shadow-2xl border border-gray-200 text-center max-w-4xl">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2 xl:">
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-14 shadow-2xl border border-gray-200 text-center max-w-4xl">
+          <div className="text-7xl mb-8">🐃</div>
+          <h2 className="text-4xl font-bold text-gray-800 mb-6">
             Buffalo Family Tree Simulator
           </h2>
           <p className="text-xl text-gray-600 mb-10 leading-relaxed">
             Simulate the growth of your buffalo herd over time. Watch as your founding buffalos
             create generations of offspring in this interactive family tree visualization.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-4">
-            <div className="text-center p-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+            <div className="text-center p-6">
+              <div className="text-4xl mb-4">📊</div>
               <h3 className="font-bold text-xl mb-3">Configure</h3>
-              <p className="text-sm text-gray-600">Set your starting units and simulation period</p>
+              <p className="text-base text-gray-600">Set your starting units and simulation period</p>
             </div>
-            <div className="text-center p-3">
+            <div className="text-center p-6">
+              <div className="text-4xl mb-4">⚡</div>
               <h3 className="font-bold text-xl mb-3">Simulate</h3>
-              <p className="text-sm text-gray-600">Run the simulation to generate your herd</p>
+              <p className="text-base text-gray-600">Run the simulation to generate your herd</p>
             </div>
-            <div className="text-center p-3">
+            <div className="text-center p-6">
+              <div className="text-4xl mb-4">🌳</div>
               <h3 className="font-bold text-xl mb-3">Explore</h3>
-              <p className="text-sm text-gray-600">Navigate through the interactive family tree</p>
+              <p className="text-base text-gray-600">Navigate through the interactive family tree</p>
             </div>
           </div>
           <button
             onClick={() => window.location.reload()}
-            className="bg-gray-500 text-white px-4 py-2 rounded-2xl font-bold text-xl hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-2xl inline-flex items-center gap-3"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 py-6 rounded-2xl font-bold text-xl hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-2xl inline-flex items-center gap-3"
           >
             Start Your First Simulation
           </button>
@@ -55,13 +59,14 @@ const TreeVisualization = ({
   const monthNames = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
 
+  // Function to get buffalo display name (A1, A2, etc.)
   const getBuffaloDisplayName = (buffalo) => {
     return `A${buffalo.id}`;
   };
 
   return (
     <div
-      className="relative w-full h-full overflow-auto" // Changed to allow scrolling
+      className="flex-1 relative overflow-auto"
       ref={containerRef}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -127,15 +132,17 @@ const TreeVisualization = ({
       {/* Tree Visualization Container */}
       <div
         ref={treeContainerRef}
-        className="min-w-full min-h-full p-10" // Changed to min-w-full and min-h-full
+        className="w-full h-full p-10"
         style={{
           transform: `scale(${zoom}) translate(${position.x}px, ${position.y}px)`,
           transition: isDragging ? 'none' : 'transform 0.1s ease',
+          minWidth: `${100 * zoom}%`,
+          minHeight: `${100 * zoom}%`,
           transformOrigin: '0 0'
         }}
       >
-        {/* Container for all founder trees */}
-        <div className="flex flex-wrap gap-10 justify-start items-start">
+        {/* flex-nowrap to prevent wrapping, min-w-max to ensure full width */}
+        <div className="flex flex-wrap gap-10 justify-center">
           {treeData.buffaloes
             .filter((b) => b.parentId === null)
             .map((founder) => (
