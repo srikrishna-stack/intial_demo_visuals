@@ -37,7 +37,8 @@ const CostEstimationTable = ({
   // Shared calculation functions
   const calculateAgeInMonths = (buffalo, targetYear, targetMonth = 0) => {
     const birthYear = buffalo.birthYear;
-    const birthMonth = buffalo.acquisitionMonth || 0;
+    // Use birthMonth if available (from getBuffaloDetails), fall back to acquisitionMonth or 0
+    const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
     const totalMonths = (targetYear - birthYear) * 12 + (targetMonth - birthMonth);
     return Math.max(0, totalMonths);
   };
@@ -50,14 +51,23 @@ const CostEstimationTable = ({
       if (buffalo.generation === 0) {
         const unit = buffalo.unit || 1;
         const buffaloId = `M${buffaloCounter}`;
+
+        // M2 (2nd buffalo) lands in July 2026 (Month 6)
+        // M1 lands in Jan 2026 (Month 0)
+        // We identify M2 by buffaloCounter being 2 (or checking buffalo.id if reliable, but counter is safer here as per generation loop)
+        const isM2 = buffaloCounter === 2;
+
+        const acquisitionMonth = isM2 ? 6 : (buffalo.acquisitionMonth || 0);
+        const baseMonth = isM2 ? 6 : (buffalo.birthMonth || 0);
+
         buffaloDetails[buffalo.id] = {
           id: buffaloId,
           originalId: buffalo.id,
           generation: buffalo.generation,
           unit: unit,
-          acquisitionMonth: buffalo.acquisitionMonth,
+          acquisitionMonth: acquisitionMonth,
           birthYear: treeData.startYear - 5,
-          birthMonth: buffalo.birthMonth || 0,
+          birthMonth: baseMonth,
           parentId: buffalo.parentId,
           children: [],
           grandchildren: []
@@ -82,7 +92,7 @@ const CostEstimationTable = ({
             unit: unit,
             acquisitionMonth: mother.acquisitionMonth,
             birthYear: treeData.startYear,
-            birthMonth: 0,
+            birthMonth: mother.birthMonth, // Inherit base month from mother (0 or 6)
             parentId: mother.originalId,
             children: [],
             grandchildren: []
@@ -105,7 +115,7 @@ const CostEstimationTable = ({
             unit: parent.unit,
             acquisitionMonth: parent.acquisitionMonth,
             birthYear: buffalo.birthYear,
-            birthMonth: buffalo.birthMonth || 0,
+            birthMonth: parent.birthMonth, // Inherit base month from parent
             parentId: buffalo.parentId,
             children: [],
             grandchildren: []
@@ -125,7 +135,7 @@ const CostEstimationTable = ({
             unit: grandparent.unit,
             acquisitionMonth: grandparent.acquisitionMonth,
             birthYear: buffalo.birthYear,
-            birthMonth: buffalo.birthMonth || 0,
+            birthMonth: grandparent.birthMonth, // Inherit base month from grandparent
             parentId: buffalo.parentId,
             children: [],
             grandchildren: []
@@ -142,6 +152,8 @@ const CostEstimationTable = ({
     const buffaloDetails = getBuffaloDetails();
     const cpfCostByYear = {};
 
+    const CPF_PER_MONTH = 13000 / 12;
+
     for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
       let totalCPFCost = 0;
 
@@ -150,22 +162,56 @@ const CostEstimationTable = ({
         const unitBuffaloes = Object.values(buffaloDetails).filter(buffalo => buffalo.unit === unit);
 
         unitBuffaloes.forEach(buffalo => {
-          if (buffalo.id === 'M1') {
-            unitCPFCost += 13000;
-          } else if (buffalo.id === 'M2') {
-            // No CPF
-          } else if (buffalo.generation === 1 || buffalo.generation === 2) {
-            const ageInMonths = calculateAgeInMonths(buffalo, year, 11);
-            if (ageInMonths >= 36) {
-              unitCPFCost += 13000;
+          let monthsWithCPF = 0;
+
+          for (let month = 0; month < 12; month++) {
+            let isCpfApplicable = false;
+
+            if (buffalo.id === 'M1') {
+              // M1 pays CPF from start (assuming acquired at start of year or fully applicable)
+              // Typically M1 is year-round
+              isCpfApplicable = true;
+            } else if (buffalo.id === 'M2') {
+              // M2 Free Period: July 2026 to June 2027 (Start Year to Start Year + 1)
+              // M2 Acquired: July 2026.
+              // M2 Present from July 2026 onwards.
+
+              // Check if buffalo is present (acquired/born)
+              // M2 acquisition is Month 6 of Start Year.
+              const isPresent = year > buffalo.birthYear || (year === buffalo.birthYear && month >= buffalo.acquisitionMonth);
+
+              if (isPresent) {
+                // Check Free Period
+                const startYear = treeData.startYear;
+                // Free Period: July of Start Year to June of Start Year + 1
+                // Free Indices: (StartYear, 6..11) and (StartYear+1, 0..5)
+
+                const isFreePeriod = (year === startYear && month >= 6) || (year === startYear + 1 && month <= 5);
+
+                if (!isFreePeriod) {
+                  isCpfApplicable = true;
+                }
+              }
+            } else if (buffalo.generation === 1 || buffalo.generation === 2) {
+              // Child CPF: Age >= 36 months
+              const ageInMonths = calculateAgeInMonths(buffalo, year, month);
+              if (ageInMonths >= 36) {
+                isCpfApplicable = true;
+              }
+            }
+
+            if (isCpfApplicable) {
+              monthsWithCPF++;
             }
           }
+
+          unitCPFCost += monthsWithCPF * CPF_PER_MONTH;
         });
 
         totalCPFCost += unitCPFCost;
       }
 
-      cpfCostByYear[year] = totalCPFCost;
+      cpfCostByYear[year] = Math.round(totalCPFCost);
     }
 
     return cpfCostByYear;
@@ -330,8 +376,28 @@ const CostEstimationTable = ({
           };
         }
 
-        if (year >= buffalo.birthYear + 3) {
+        // Revenue Logic
+        // For Gen 0 (Mothers): Revenue based on acquisitionMonth
+        // For Gen 1/2 (Children): Revenue starts when they mature (e.g. 3 years / 36 months)
+
+        let shouldCalculateRevenue = false;
+        if (buffalo.generation === 0) {
+          shouldCalculateRevenue = true;
+        } else {
+          // For children, checking strictly year is not enough as M2C1 is born mid-year.
+          // We check if they are at least 36 months old in this year (at some point).
+          // Actually, we should check per month.
+          shouldCalculateRevenue = true; // We will check inside the monthly loop
+        }
+
+        if (shouldCalculateRevenue) {
           for (let month = 0; month < 12; month++) {
+            // Precise age check for children
+            if (buffalo.generation > 0) {
+              const ageAtMonth = calculateAgeInMonths(buffalo, year, month);
+              if (ageAtMonth < 36) continue;
+            }
+
             const revenue = calculateMonthlyRevenueForBuffalo(
               buffalo.acquisitionMonth,
               month,

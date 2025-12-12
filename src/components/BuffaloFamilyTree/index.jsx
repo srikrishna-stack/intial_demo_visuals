@@ -45,7 +45,6 @@ export default function BuffaloFamilyTree() {
     restPeriod: { months: 4, revenue: 0 }
   };
 
-  // Calculate monthly revenue for EACH buffalo based on its individual cycle
   const calculateMonthlyRevenueForBuffalo = (buffaloId, acquisitionMonth, currentYear, currentMonth) => {
     const monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
 
