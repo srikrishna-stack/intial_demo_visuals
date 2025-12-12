@@ -325,14 +325,21 @@ const CostEstimationTable = ({
 
   const initialInvestment = calculateInitialInvestment();
 
-  const calculateMonthlyRevenueForBuffalo = (acquisitionMonth, currentMonth, currentYear, startYear) => {
+  const calculateMonthlyRevenueForBuffalo = (acquisitionMonth, currentMonth, currentYear, startYear, isCalf = false) => {
     const monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
 
-    if (monthsSinceAcquisition < 2) {
-      return 0;
+    if (monthsSinceAcquisition < (isCalf ? 36 : 2)) {
+      return 0; // Acclimatization for adults (2 months) or Maturation for calves (36 months)
     }
 
-    const productionMonth = monthsSinceAcquisition - 2;
+    // For Adults: Start cycle at month 2 (index 0).
+    // For Calves: Start cycle at month 36 (index 0).
+    // If isCalf: productionMonth = Age - 36.
+    // If Adult: productionMonth = Age - 2.
+
+    // Note: monthsSinceAcquisition IS the Age (relative to acquisition/birth).
+
+    const productionMonth = monthsSinceAcquisition - (isCalf ? 36 : 2);
     const cycleMonth = productionMonth % 12;
 
     if (cycleMonth < 5) {
@@ -402,7 +409,8 @@ const CostEstimationTable = ({
               buffalo.acquisitionMonth,
               month,
               year,
-              treeData.startYear
+              treeData.startYear,
+              buffalo.generation > 0 // isCalf
             );
 
             if (revenue > 0) {

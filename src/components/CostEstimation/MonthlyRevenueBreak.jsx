@@ -21,7 +21,14 @@ const MonthlyRevenueBreak = ({
       // Or if it's M1/M2 which are main units
       if (buffalo.generation === 0) return true;
 
+      // Allow buffaloes that turn 3 this year to show up (>= birthYear + 3)
+      // Original check was strict < which excludes the transition year if hasRevenue is false
+      // But we want to see them if they are potentially producing
       if (selectedYear < buffalo.birthYear + 3) {
+        // Strict check: if year is strictly less than birth + 3, definitely too young.
+        // e.g. Born 2026. 2026 + 3 = 2029.
+        // Year 2028 < 2029. True. Exclude.
+        // Year 2029 < 2029. False. Include.
         return false;
       }
 
@@ -29,7 +36,13 @@ const MonthlyRevenueBreak = ({
         return (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0) > 0;
       });
 
-      return hasRevenue;
+      // Also check if buffalo is mature enough to be considered "producing" (or "adult") even if currently dry/no revenue
+      // Age >= 36 months at ANY point in the year
+      // We can approximate by checking age at end of year
+      const ageAtYearEnd = calculateAgeInMonths(buffalo, selectedYear, 11);
+      const isMature = ageAtYearEnd >= 36;
+
+      return hasRevenue || isMature;
     });
 
   // Helper to check precise CPF applicability
