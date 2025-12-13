@@ -1,5 +1,7 @@
 import React from 'react';
-import { Play, RotateCcw } from "lucide-react";
+import { Play, RotateCcw, Calendar } from "lucide-react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { formatCurrency } from './CommonComponents';
 
 const HeaderControls = ({
@@ -35,139 +37,97 @@ const HeaderControls = ({
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm shadow-lg p-6 xl:p-4 border-b border-gray-200 flex-shrink-0">
+    <div className="bg-white/90 backdrop-blur-sm shadow-lg p-2 border-b border-gray-200 flex-shrink-0 relative z-50">
       <div className="max-w-8xl mx-auto">
-        {/* Header with centered title */}
-        <div className="flex flex-col md:flex-row items-center justify-between mb-6 md:mb-4">
-          <h1 className="text-3xl font-bold text-gray-800 text-center md:text-left mb-4 md:mb-0 md:text-2xl lg:text-3xl">
-            Buffalo Family Tree Simulator
-          </h1>
-
-          {treeData && (
-            <div className="flex items-center gap-3">
-              <button
-                onClick={resetSimulation}
-                className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-medium text-base"
-              >
-                <RotateCcw size={18} />
-                Reset
-              </button>
-            </div>
-          )}
-        </div>
-
         {/* Controls grid */}
-        <div className="flex md:grid-cols-2 lg:grid-cols-7 gap-5">
+        <div className="flex flex-wrap items-end gap-2 lg:gap-4 justify-center lg:justify-start">
           {/* Starting Units */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Starting Units
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-gray-700">
+              Units
             </label>
             <input
               type="number"
               min="1"
-              max="10"
-              className="w-32 border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-              value={units || ''}
+              max="1"
+              disabled
+              className="w-24 border border-gray-300 p-1.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-100 cursor-not-allowed text-gray-500"
+              value={units || 1}
               onChange={(e) => handleNumberChange(e.target.value, setUnits)}
-              placeholder="1-10"
+              placeholder="1"
             />
           </div>
 
+          {/* Start Date Picker */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-gray-700 flex items-center gap-1">
+              Start Date
+            </label>
+            <div className="relative">
+              <DatePicker
+                selected={new Date(startYear, startMonth, startDay)}
+                onChange={(date) => {
+                  if (date) {
+                    setStartYear(date.getFullYear());
+                    setStartMonth(date.getMonth());
+                    setStartDay(date.getDate());
+                  }
+                }}
+                minDate={new Date()}
+                showMonthDropdown
+                showYearDropdown
+                dropdownMode="select"
+                className="w-40 border border-gray-300 p-2 pl-9 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm cursor-pointer shadow-sm"
+                dateFormat="dd MMM yyyy"
+                placeholderText="Select date"
+                onKeyDown={(e) => e.preventDefault()}
+              />
+              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={16} />
+            </div>
+          </div>
+
           {/* Simulation Years */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-gray-700">
               Simulation Years
             </label>
             <input
               type="number"
               min="1"
               max="10"
-              className="w-32 border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+              className="w-24 border border-gray-300 p-1.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               value={years || ''}
               onChange={(e) => handleNumberChange(e.target.value, setYears)}
               placeholder="1-50"
             />
           </div>
 
-          {/* Start Year */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Start Year
-            </label>
-            <input
-              type="number"
-              min="2025"
-              max="2050"
-              className="w-32 border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-              value={startYear || ''}
-              onChange={(e) => handleNumberChange(e.target.value, setStartYear)}
-              placeholder="2025-2100"
-            />
-          </div>
-
-          {/* Start Month */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Start Month
-            </label>
-            <select
-              className="w-40 border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-              value={startMonth}
-              onChange={(e) => setStartMonth(Number(e.target.value))}
-            >
-              {monthNames.map((month, index) => (
-                <option key={index} value={index}>
-                  {month}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Start Day */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Start Day
-            </label>
-            <select
-              className="w-32 border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-              value={startDay}
-              onChange={(e) => setStartDay(Number(e.target.value))}
-            >
-              {dayOptions.map((day) => (
-                <option key={day} value={day}>
-                  {day}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Run Simulation Button */}
-          <div className="flex items-end lg:col-span-2">
+          <div className="flex pb-0.5">
             <button
               onClick={runSimulation}
-              className="w-48 md:w-48 flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md text-base min-h-[48px]"
+              className="w-32 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-1.5 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md text-sm min-h-[34px]"
             >
-              <Play size={20} />
-              Run
+              Submit
             </button>
           </div>
 
           {/* New Summary Metrics Section - Only visible when treeData exists */}
           {treeData && treeData.summaryStats && (
-            <div className="flex items-center gap-6 lg:col-span-full xl:col-span-3 xl:ml-8 mt-4 xl:mt-8 border-t xl:border-t-0 xl:border-l border-gray-200 pt-4 xl:pt-0 xl:pl-8">
+            <div className="flex items-center gap-4 ml-auto border-l border-gray-200 pl-4">
               <div className="flex flex-col">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Buffaloes</span>
-                <span className="text-xl font-bold text-gray-800">{treeData.summaryStats.totalBuffaloes}</span>
+                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Buffaloes</span>
+                <span className="text-sm font-bold text-gray-800">{treeData.summaryStats.totalBuffaloes}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Cumulative Net</span>
-                <span className="text-xl font-bold text-green-600">{formatCurrency(treeData.summaryStats.totalNetRevenue)}</span>
+                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Cumulative Net</span>
+                <span className="text-sm font-bold text-green-600">{formatCurrency(treeData.summaryStats.totalNetRevenue)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Asset Value</span>
-                <span className="text-xl font-bold text-blue-600">{formatCurrency(treeData.summaryStats.totalAssetValue)}</span>
+                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Asset Value</span>
+                <span className="text-sm font-bold text-blue-600">{formatCurrency(treeData.summaryStats.totalAssetValue)}</span>
               </div>
+
             </div>
           )}
         </div>

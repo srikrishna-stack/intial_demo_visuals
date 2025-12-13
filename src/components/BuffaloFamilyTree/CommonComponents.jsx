@@ -75,35 +75,82 @@ export const buildTree = (root, all) => {
   return all.filter((b) => b.parentId === root.id);
 };
 
-// Buffalo Node Component - Updated to accept elementId and parentDisplayName
-export const BuffaloNode = ({ data, founder, displayName, elementId, parentDisplayName }) => (
-  <div id={elementId} className="flex flex-col items-center group relative">
-    <div
-      className={`${colors[data.generation % colors.length]}
-        rounded-full w-16 h-16 flex flex-col justify-center items-center
-        text-white shadow-lg transform transition-all duration-200
-        hover:scale-110 border-2 border-white`}
-    >
-      <div className="text-sm font-bold">
-        {displayName}
-      </div>
-      <div className="text-[9px] opacity-90 bg-black bg-opacity-20 px-1 rounded">
-        Gen {data.generation}
-      </div>
-    </div>
+// Buffalo Node Component - Updated to accept elementId and parentDisplayName AND show tooltip
+export const BuffaloNode = ({ data, founder, displayName, elementId, parentDisplayName }) => {
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const birthMonthName = monthNames[data.acquisitionMonth] || "Jan";
 
-    <div className="bg-white px-2 py-1 mt-1 rounded-lg shadow text-center border border-gray-200 min-w-[100px]">
-      <div className="text-xs font-semibold text-gray-700">
-        {founder ? `Founder` : `Born ${data.birthYear}`}
-      </div>
-      {!founder && (
-        <div className="text-[9px] text-gray-500 mt-0.5">
-          Parent: {parentDisplayName}
+  return (
+    <div id={elementId} className="flex flex-col items-center group relative z-10 hover:z-50">
+      {/* Tooltip - Positioned to the RIGHT */}
+      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 hidden group-hover:block z-50 w-64">
+        <div className="bg-gray-900/95 backdrop-blur text-white text-xs rounded-xl py-3 px-4 shadow-2xl border border-gray-700 relative">
+          <div className="font-bold text-base mb-2 border-b border-gray-700 pb-1 text-blue-300">
+            {displayName} Details
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Grandparent:</span>
+              <span className="font-medium text-gray-200">{data.grandParentId || "N/A"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Parent:</span>
+              <span className="font-medium text-gray-200">{parentDisplayName || "N/A"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Born:</span>
+              <span className="font-medium text-gray-200">{birthMonthName} {data.birthYear}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Age:</span>
+              <span className="font-medium text-gray-200">{data.ageDisplay}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Lifetime Revenue:</span>
+              <span className="font-medium text-green-400">{formatCurrency(data.lifetimeRevenue)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Asset Value:</span>
+              <span className="font-medium text-blue-400">{formatCurrency(data.currentAssetValue)}</span>
+            </div>
+          </div>
+
+          {/* Arrow pointing Left (towards the node) */}
+          <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent border-r-gray-900/95"></div>
         </div>
-      )}
+      </div>
+
+      <div
+        className={`${colors[data.generation % colors.length]}
+          rounded-full w-16 h-16 flex flex-col justify-center items-center
+          text-white shadow-lg transform transition-all duration-200
+          hover:scale-110 border-2 border-white cursor-help relative`}
+      >
+        {/* Producing Indicator */}
+
+
+        <div className="text-sm font-bold">
+          {displayName}
+        </div>
+        <div className="text-[9px] opacity-90 bg-black bg-opacity-20 px-1 rounded">
+          Gen {data.generation}
+        </div>
+      </div>
+
+      <div className="bg-white px-2 py-1 mt-1 rounded-lg shadow text-center border border-gray-200 min-w-[100px]">
+        <div className="text-xs font-semibold text-gray-700">
+          {founder ? `Founder` : `Born ${data.birthYear}`}
+        </div>
+        {!founder && (
+          <div className="text-[9px] text-gray-500 mt-0.5">
+            Parent: {parentDisplayName}
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Tree Branch Component with Xarrow - FIXED VERSION
 export const TreeBranch = ({ parent, all, level = 0, getDisplayName, zoom = 1 }) => {

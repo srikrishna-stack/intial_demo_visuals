@@ -5,11 +5,13 @@ import { formatCurrency, formatNumber, calculateAgeInMonths, getBuffaloValueByAg
 import CostEstimationTable from "../CostEstimation/CostEstimationTable";
 
 export default function BuffaloFamilyTree() {
+  // Initialize with current date
+  const today = new Date();
   const [units, setUnits] = useState(1);
   const [years, setYears] = useState(10);
-  const [startYear, setStartYear] = useState(2026);
-  const [startMonth, setStartMonth] = useState(0);
-  const [startDay, setStartDay] = useState(1);
+  const [startYear, setStartYear] = useState(today.getFullYear());
+  const [startMonth, setStartMonth] = useState(today.getMonth());
+  const [startDay, setStartDay] = useState(today.getDate());
   const [treeData, setTreeData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -170,6 +172,7 @@ export default function BuffaloFamilyTree() {
         // First buffalo - acquired in January
         // Unit 1: A, Unit 2: C, etc.
         const id1 = String.fromCharCode(65 + (u * 2));
+        const date1 = new Date(startYear, startMonth, startDay);
         herd.push({
           id: id1,
           age: 5,
@@ -179,11 +182,14 @@ export default function BuffaloFamilyTree() {
           birthYear: startYear - 5,
           acquisitionMonth: startMonth,
           unit: u + 1,
+          rootId: id1, // Root ID for lineage tracking
+          startedAt: date1.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
         });
 
         // Second buffalo - acquired in July (6 months later)
         // Unit 1: B, Unit 2: D, etc.
         const id2 = String.fromCharCode(65 + (u * 2) + 1);
+        const date2 = new Date(startYear, startMonth + 6, startDay);
         herd.push({
           id: id2,
           age: 5,
@@ -193,6 +199,8 @@ export default function BuffaloFamilyTree() {
           birthYear: startYear - 5,
           acquisitionMonth: (startMonth + 6) % 12,
           unit: u + 1,
+          rootId: id2, // Root ID for lineage tracking
+          startedAt: date2.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
         });
       }
 
@@ -219,6 +227,7 @@ export default function BuffaloFamilyTree() {
             acquisitionMonth: parent.acquisitionMonth, // Inherits cycle offset
             generation: parent.generation + 1,
             unit: parent.unit,
+            rootId: parent.rootId, // Inherit root ID
           });
         });
 
@@ -322,6 +331,54 @@ export default function BuffaloFamilyTree() {
 
       const { totalRevenue, totalNetRevenue } = calculateTotalFinancials();
 
+      // --- Calculate Per-Buffalo Stats for Tooltip ---
+      herd.forEach(buffalo => {
+        // 1. Age & Asset Value
+        const ageInMonths = calculateAgeInMonths(buffalo, endYear, 11);
+        buffalo.ageInMonths = ageInMonths;
+        buffalo.ageDisplay = `${Math.floor(ageInMonths / 12)}y ${ageInMonths % 12}m`;
+        buffalo.currentAssetValue = getBuffaloValueByAge(ageInMonths);
+
+        // 2. Grandparent
+        if (buffalo.parentId) {
+          const parent = herd.find(p => p.id === buffalo.parentId);
+          buffalo.grandParentId = parent ? parent.parentId : null;
+        } else {
+          buffalo.grandParentId = null;
+        }
+
+        // 3. Lifetime Revenue
+        let lifetimeRevenue = 0;
+        const calcStartYear = Math.max(startYear, buffalo.birthYear);
+
+        for (let y = calcStartYear; y <= endYear; y++) {
+          // If born this year, start from acquisition/birth month
+          // For simplicity in this total stats view, we can scan all 12 months
+          // because calculateMonthlyRevenueForBuffalo handles the "before acquisition" logic
+          // by checking (currentYear - startYear)*12 + ...
+          // Actually, we must be careful. helper function `calculateMonthlyRevenueForBuffalo`
+          // uses `monthsSinceAcquisition`.
+
+          for (let m = 0; m < 12; m++) {
+            // IMPORTANT: Match CostEstimationTable logic
+            // For offspring (Gen > 0), revenue only starts after 36 months
+            if (buffalo.generation > 0) {
+              const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
+              const ageAtMonth = ((y - buffalo.birthYear) * 12) + (m - birthMonth);
+              if (ageAtMonth < 36) continue;
+            }
+
+            lifetimeRevenue += calculateMonthlyRevenueForBuffalo(
+              buffalo.id,
+              buffalo.acquisitionMonth,
+              y,
+              m
+            );
+          }
+        }
+        buffalo.lifetimeRevenue = lifetimeRevenue;
+      });
+
       setTreeData({
         units,
         years,
@@ -337,8 +394,41 @@ export default function BuffaloFamilyTree() {
           totalNetRevenue: totalNetRevenue,
           totalAssetValue: totalAssetValue,
           duration: totalYears
-        }
+        },
+        lineages: {} // Will be populated below
       });
+
+      // Calculate per-lineage stats
+      const bioLineages = {};
+      const founders = herd.filter(b => b.parentId === null);
+
+      founders.forEach(founder => {
+        const lineageBuffaloes = herd.filter(b => b.rootId === founder.id);
+        const lineageRevenueData = calculateRevenueData(lineageBuffaloes, startYear, startMonth, totalYears);
+
+        // Calculate lineage asset value
+        let lineageAssetValue = 0;
+        lineageBuffaloes.forEach(buffalo => {
+          if (buffalo.birthYear <= endYear) {
+            const ageInMonths = calculateAgeInMonths(buffalo, endYear, 11);
+            lineageAssetValue += getBuffaloValueByAge(ageInMonths);
+          }
+        });
+
+        bioLineages[founder.id] = {
+          id: founder.id,
+          unit: founder.unit,
+          count: lineageBuffaloes.length,
+          revenueData: lineageRevenueData,
+          assetValue: lineageAssetValue,
+          buffaloes: lineageBuffaloes
+        };
+      });
+
+      setTreeData(prev => ({
+        ...prev,
+        lineages: bioLineages
+      }));
 
       setLoading(false);
       setActiveTab("familyTree");
@@ -465,6 +555,34 @@ export default function BuffaloFamilyTree() {
 
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col overflow-hidden">
+      {!isFullScreen && treeData && (
+        <div className="my-6">
+          <div className="flex justify-center items-center">
+            <div className="inline-flex rounded-full border-2 border-black overflow-hidden shadow-sm">
+              <button
+                className={`px-8 py-3 font-bold text-sm tracking-wide transition-all duration-300 ${activeTab === "familyTree"
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white text-black hover:bg-gray-100'
+                  }`}
+                onClick={() => setActiveTab("familyTree")}
+              >
+                Tree View
+              </button>
+
+              <button
+                className={`px-8 py-3 font-bold text-sm tracking-wide transition-all duration-300 ${activeTab === "costEstimation"
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white text-black hover:bg-gray-100'
+                  }`}
+                onClick={() => setActiveTab("costEstimation")}
+              >
+                Revenue Estimation
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
       {!isFullScreen && (
         <HeaderControls
           units={units}
@@ -489,30 +607,7 @@ export default function BuffaloFamilyTree() {
       )}
 
       {/* Tab Navigation */}
-      {!isFullScreen && treeData && (
-        <div className="my-5">
-          <div className="flex justify-center items-center gap-6 ">
-            <button
-              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${activeTab === "familyTree"
-                ? 'bg-green-500 text-black shadow-lg transform scale-105'
-                : 'bg-black text-white hover:bg-gray-800'
-                }`}
-              onClick={() => setActiveTab("familyTree")}
-            >
-              Family Tree
-            </button>
-            <button
-              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${activeTab === "costEstimation"
-                ? 'bg-green-500 text-black shadow-lg transform scale-105'
-                : 'bg-black text-white hover:bg-gray-800'
-                }`}
-              onClick={() => setActiveTab("costEstimation")}
-            >
-              Price Estimation
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">

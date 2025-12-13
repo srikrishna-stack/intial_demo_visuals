@@ -1,26 +1,29 @@
-import React from 'react';
-import { Move, Maximize, Minimize, Scan } from "lucide-react";
-import { BuffaloNode, TreeBranch } from './CommonComponents';
+import React, { useState, useEffect } from 'react';
+import { Move, Maximize, Minimize, Scan, LayoutGrid } from "lucide-react";
+import { BuffaloNode, TreeBranch, formatCurrency } from './CommonComponents';
 
 const TreeVisualization = ({
   treeData,
   zoom,
-  position,
-  isDragging,
-  handleMouseDown,
-  handleMouseMove,
-  handleMouseUp,
   containerRef,
   treeContainerRef,
   isFullScreen,
   toggleFullScreen,
-  handleFitToScreen, // New prop
+  handleFitToScreen,
 }) => {
+  const [activeFounderId, setActiveFounderId] = useState("all");
+
+  // Reset to "all" when treeData changes (new simulation)
+  useEffect(() => {
+    if (treeData) {
+      setActiveFounderId("all");
+    }
+  }, [treeData]);
+
   if (!treeData) {
     return (
       <div className="flex-1 flex items-center justify-center p-10">
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-14 shadow-2xl border border-gray-200 text-center max-w-4xl">
-          <div className="text-7xl mb-8">🐃</div>
           <h2 className="text-4xl font-bold text-gray-800 mb-6">
             Buffalo Family Tree Simulator
           </h2>
@@ -30,17 +33,14 @@ const TreeVisualization = ({
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
             <div className="text-center p-6">
-              <div className="text-4xl mb-4">📊</div>
               <h3 className="font-bold text-xl mb-3">Configure</h3>
               <p className="text-base text-gray-600">Set your starting units and simulation period</p>
             </div>
             <div className="text-center p-6">
-              <div className="text-4xl mb-4">⚡</div>
               <h3 className="font-bold text-xl mb-3">Simulate</h3>
               <p className="text-base text-gray-600">Run the simulation to generate your herd</p>
             </div>
             <div className="text-center p-6">
-              <div className="text-4xl mb-4">🌳</div>
               <h3 className="font-bold text-xl mb-3">Explore</h3>
               <p className="text-base text-gray-600">Navigate through the interactive family tree</p>
             </div>
@@ -49,7 +49,7 @@ const TreeVisualization = ({
             onClick={() => window.location.reload()}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 py-6 rounded-2xl font-bold text-xl hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-2xl inline-flex items-center gap-3"
           >
-            Start Your First Simulation
+            Start
           </button>
         </div>
       </div>
@@ -64,111 +64,158 @@ const TreeVisualization = ({
     return buffalo.id;
   };
 
-  return (
-    <div
-      className="w-full h-full relative overflow-auto"
-      ref={containerRef}
-    /* Native scroll enabled, drag handlers removed */
-    >
-      {/* Controls Info */}
-      <div className="absolute top-6 left-6 z-10 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-gray-200">
-        <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
-          <Move size={16} />
-          <span>Scroll to pan | Ctrl+Scroll to zoom</span>
-        </div>
-        <div className="text-sm text-gray-600 mb-3">Use buttons to reset zoom</div>
+  // Determine current stats based on selection
+  const filteredBuffaloes = activeFounderId === "all"
+    ? treeData.buffaloes
+    : treeData.buffaloes.filter(b => b.rootId === activeFounderId || b.id === activeFounderId);
 
-        {/* Helper Buttons Grid */}
-        <div className="grid grid-cols-2 gap-2 w-full">
-          <button
-            onClick={handleFitToScreen}
-            className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors justify-center"
-            title="Fit to Screen"
-          >
-            <Scan size={14} />
-            <span>Fit View</span>
-          </button>
+  const stats = {
+    count: filteredBuffaloes.length,
+    revenue: filteredBuffaloes.reduce((sum, b) => sum + (b.lifetimeRevenue || 0), 0),
+    netRevenue: activeFounderId === "all" && treeData.summaryStats ? treeData.summaryStats.totalNetRevenue : filteredBuffaloes.reduce((sum, b) => sum + (b.lifetimeRevenue || 0), 0),
+    assetValue: filteredBuffaloes.reduce((sum, b) => sum + (b.currentAssetValue || 0), 0),
+    producing: filteredBuffaloes.filter(b => b.ageInMonths >= 36).length,
+    nonProducing: filteredBuffaloes.filter(b => b.ageInMonths < 36).length
+  };
+
+  return (
+    <div className="w-full h-full flex flex-col relative">
+      {/* Fixed Header Section - Single Row Layout */}
+      <div className="flex-none bg-white/95 backdrop-blur-md shadow-sm z-20 px-6 py-3 border-b border-gray-200 flex items-center justify-between gap-8 overflow-x-auto no-scrollbar">
+
+        {/* Left Side: Controls & Tabs */}
+        <div className="flex items-center gap-6 flex-shrink-0">
+          {/* View Controls */}
           <button
             onClick={toggleFullScreen}
-            className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors justify-center"
+            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors shadow-sm"
             title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
           >
-            {isFullScreen ? (
-              <>
-                <Minimize size={14} />
-                <span>Exit</span>
-              </>
-            ) : (
-              <>
-                <Maximize size={14} />
-                <span>Expand</span>
-              </>
-            )}
+            {isFullScreen ? <Minimize size={16} /> : <Maximize size={16} />}
+            <span className="whitespace-nowrap">{isFullScreen ? "Exit" : "Expand"}</span>
           </button>
-        </div>
-      </div>
 
-      {/* Summary Cards */}
-      <div className="absolute top-6 right-6 z-10 flex gap-4">
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl p-5 shadow-xl text-white min-w-[160px]">
-          <div className="text-2xl font-bold">{treeData.totalBuffaloes}</div>
-          <div className="text-sm opacity-90">Total Buffaloes</div>
-        </div>
-
-        {/* Revenue Display */}
-        {treeData.revenueData && (
-          <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl p-5 shadow-xl text-white min-w-[160px]">
-            <div className="text-2xl font-bold">₹{Math.round(treeData.revenueData.totalRevenue / 100000)}L+</div>
-            <div className="text-sm opacity-90">Total Revenue</div>
-          </div>
-        )}
-      </div>
-
-      {/* Tree Visualization Container */}
-      <div
-        ref={treeContainerRef}
-        className="inline-block p-10 min-w-full min-h-full" /* inline-block allows expansion */
-        style={{
-          transform: `scale(${zoom})`,
-          transformOrigin: '0 0',
-          width: 'max-content',
-          height: 'max-content'
-        }}
-      >
-        {/* flex-col to stack roots vertically (A on top of B) */}
-        <div className="flex flex-col gap-24 items-start">
-          {treeData.buffaloes
-            .filter((b) => b.parentId === null)
-            .map((founder) => (
-              <div
-                key={founder.id}
-                className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-2xl border border-gray-200 flex-shrink-0"
+          {/* Unit Tabs */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveFounderId("all")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeFounderId === "all"
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+            >
+              <LayoutGrid size={14} />
+              All Units
+            </button>
+            {treeData.lineages && Object.values(treeData.lineages).map((lineage) => (
+              <button
+                key={lineage.id}
+                onClick={() => setActiveFounderId(lineage.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeFounderId === lineage.id
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
-                <div className="text-center mb-8">
-                  <h2 className="text-xl font-bold text-gray-800 mb-2">
-                    Unit {founder.unit} - {getBuffaloDisplayName(founder)}
-                  </h2>
-                  <div className="text-sm text-gray-600 mb-2">
-                    Started: {monthNames[treeData.startMonth]} {treeData.startDay}, {treeData.startYear}
-                  </div>
-                  <div className="w-20 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 mx-auto rounded-full"></div>
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <BuffaloNode
-                    data={founder}
-                    founder
-                    displayName={getBuffaloDisplayName(founder)}
-                    elementId={`buffalo-${founder.id}`}
-                  />
-                  <TreeBranch
-                    parent={founder}
-                    all={treeData.buffaloes}
-                    getDisplayName={getBuffaloDisplayName}
-                  />
-                </div>
-              </div>
+                <span>Unit {lineage.unit} - {lineage.id}</span>
+                <span className="bg-black/10 px-1.5 rounded text-[10px]">{lineage.count}</span>
+              </button>
             ))}
+          </div>
+        </div>
+
+        {/* Right Side: Stats Cards (Single Row) */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Buffaloes */}
+          <div className="bg-white border border-gray-200 rounded-xl px-5 py-2 min-w-[120px] shadow-sm">
+            <div className="text-[10px] text-gray-500 font-extrabold uppercase tracking-wider">Buffaloes</div>
+            <div className="text-lg font-black text-gray-800">{stats.count}</div>
+          </div>
+
+          {/* Revenue -> Cumulative Net */}
+          <div className="bg-white border border-gray-200 rounded-xl px-5 py-2 min-w-[130px] shadow-sm">
+            <div className="text-[10px] text-gray-500 font-extrabold uppercase tracking-wider">Cumulative Net</div>
+            <div className="text-lg font-black text-green-600">
+              {stats.netRevenue > 100000
+                ? `${(stats.netRevenue / 100000).toFixed(2)}L`
+                : formatCurrency(stats.netRevenue)}
+            </div>
+          </div>
+
+          {/* Asset Value */}
+          <div className="bg-white border border-gray-200 rounded-xl px-5 py-2 min-w-[130px] shadow-sm">
+            <div className="text-[10px] text-gray-500 font-extrabold uppercase tracking-wider">Asset Value</div>
+            <div className="text-lg font-black text-indigo-600">
+              {stats.assetValue > 100000
+                ? `${(stats.assetValue / 100000).toFixed(2)}L`
+                : formatCurrency(stats.assetValue)}
+            </div>
+          </div>
+
+          {/* Producing */}
+          <div className="bg-white border border-gray-200 rounded-xl px-5 py-2 min-w-[120px] shadow-sm">
+            <div className="text-[10px] text-gray-500 font-extrabold uppercase tracking-wider">Producing</div>
+            <div className="text-lg font-black text-teal-700">{stats.producing}</div>
+          </div>
+
+          {/* Non-Producing */}
+          <div className="bg-white border border-gray-200 rounded-xl px-5 py-2 min-w-[120px] shadow-sm">
+            <div className="text-[10px] text-gray-500 font-extrabold uppercase tracking-wider">Non-Producing</div>
+            <div className="text-lg font-black text-amber-700">{stats.nonProducing}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scrollable Tree Container */}
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-auto relative bg-gradient-to-br from-blue-50 to-indigo-50"
+      >
+        <div
+          ref={treeContainerRef}
+          className="inline-block p-10 min-w-full min-h-full transition-transform duration-300 ease-out" /* Reverted to inline-block for expansion */
+          style={{
+            transform: `scale(${zoom})`,
+            transformOrigin: '0 0',
+            width: 'max-content',
+            height: 'max-content'
+          }}
+        >
+          {/* flex-col to stack roots vertically (A on top of B) */}
+          <div className="flex flex-col gap-24 items-start">
+            {treeData.buffaloes
+              .filter((b) => b.parentId === null) // Founders
+              .filter((b) => activeFounderId === "all" || b.id === activeFounderId) // Filter by tab
+              .map((founder) => (
+                <div
+                  key={founder.id}
+                  className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-2xl border border-gray-200 flex-shrink-0"
+                >
+                  <div className="text-center mb-8">
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">
+                      Unit {founder.unit} - {getBuffaloDisplayName(founder)}
+                    </h2>
+                    <div className="text-sm text-gray-600 mb-2">
+                      Started: {founder.startedAt}
+                    </div>
+                    <div className="w-20 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 mx-auto rounded-full"></div>
+                  </div>
+
+                  <div className="flex flex-col items-center">
+                    <BuffaloNode
+                      data={founder}
+                      founder
+                      displayName={getBuffaloDisplayName(founder)}
+                      elementId={`buffalo-${founder.id}`}
+                    />
+                    <TreeBranch
+                      parent={founder}
+                      all={treeData.buffaloes}
+                      getDisplayName={getBuffaloDisplayName}
+                    />
+                  </div>
+                </div>
+              ))}
+          </div>
         </div>
       </div>
     </div>
