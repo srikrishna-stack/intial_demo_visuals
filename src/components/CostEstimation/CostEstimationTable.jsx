@@ -111,27 +111,33 @@ const CostEstimationTable = ({
           for (let month = 0; month < 12; month++) {
             let isCpfApplicable = false;
 
-            if (buffalo.id === 'A') {
-              // A (was M1) pays CPF from start
-              isCpfApplicable = true;
-            } else if (buffalo.id === 'B') {
-              // B (was M2) Free Period: July 2026 to June 2027
+            if (buffalo.generation === 0) {
+              // Gen 0: Identify Type A (First in unit) vs Type B (Second in unit)
+              // Logic: (charCode - 65) % 2 === 0 is Type A (Even: 0, 2, 4...), Odd is Type B (1, 3...)
+              const isFirstInUnit = (buffalo.id.charCodeAt(0) - 65) % 2 === 0;
 
-              // Check if buffalo is present (acquired/born)
-              const isPresent = year > buffalo.birthYear || (year === buffalo.birthYear && month >= buffalo.acquisitionMonth);
-
-              if (isPresent) {
-                // Check Free Period
+              if (isFirstInUnit) {
+                // Type A: Always pays from start
+                isCpfApplicable = true;
+              } else {
+                // Type B: Free Period Check
+                // Fix: Check presence logic to match index.jsx fix (Simulation start vs Birth)
+                // For Gen 0, birthYear is older, so we must check relative to Start Year for acquisition
                 const startYear = treeData.startYear;
-                // Free Period: July of Start Year to June of Start Year + 1
-                const isFreePeriod = (year === startYear && month >= 6) || (year === startYear + 1 && month <= 5);
+                const isPresentInSimulation = year > startYear || (year === startYear && month >= buffalo.acquisitionMonth);
 
-                if (!isFreePeriod) {
-                  isCpfApplicable = true;
+                if (isPresentInSimulation) {
+                  // Free Period: July of Start Year to June of Start Year + 1
+                  const isFreePeriod = (year === startYear && month >= 6) || (year === startYear + 1 && month <= 5);
+
+                  if (!isFreePeriod) {
+                    isCpfApplicable = true;
+                  }
                 }
               }
             } else if (buffalo.generation >= 1) {
               // Child CPF: Age >= 36 months
+              // Use precise monthly calculation
               const ageInMonths = calculateAgeInMonths(buffalo, year, month);
               if (ageInMonths >= 36) {
                 isCpfApplicable = true;

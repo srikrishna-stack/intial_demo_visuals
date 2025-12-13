@@ -429,7 +429,7 @@ const AssetMarketValue = ({
                         {asset.totalBuffaloes}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
-                        {asset.ageCategories?.['0-6 months']?.count || 0}
+                        {asset.ageCategories?.['0-6 months (Calves)']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
                         {asset.ageCategories?.['6-12 months']?.count || 0}
@@ -477,23 +477,23 @@ const AssetMarketValue = ({
           {/* Initial Asset Value Card */}
           <div className="w-full lg:w-1/2 max-w-md bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-300 shadow-sm hover:shadow-md transition-shadow duration-300 text-center">
             <div className="text-2xl font-bold text-blue-700 mb-2">
-              {formatCurrency(assetMarketValue[0]?.totalAssetValue || 0)}
+              {(() => {
+                const initialMothers = treeData.units * 2;
+                const initialValue = initialMothers * 175000;
+                return formatCurrency(initialValue);
+              })()}
             </div>
-            <div className="text-lg font-semibold text-blue-700">Initial Asset Value ({startYear})</div>
+            <div className="text-lg font-semibold text-blue-700">Initial Asset Value ({treeData.startYear})</div>
             <div className="text-sm text-gray-600 mt-2">
               {(() => {
-                const initialAsset = assetMarketValue[0];
-                if (!initialAsset || !initialAsset.ageCategories) return "0 buffaloes";
-                let total = 0;
-                Object.values(initialAsset.ageCategories).forEach(cat => {
-                  total += cat.count || 0;
-                });
-                return `${total} buffaloes`;
+                const initialMothers = treeData.units * 2;
+                return `${initialMothers} buffaloes`;
               })()}
               <br />
-              {assetMarketValue[0]?.ageCategories?.['60+ months (Mother Buffalo)']?.count || 0} mother buffaloes (60+ months)
-              <br />
-              {(assetMarketValue[0]?.ageCategories?.['0-6 months (Calves)']?.count || 0) + (assetMarketValue[0]?.ageCategories?.['6-12 months']?.count || 0)} calves (0-12 months)
+              {(() => {
+                const initialMothers = treeData.units * 2;
+                return `${initialMothers} mother buffaloes (60+ months)`;
+              })()}
             </div>
           </div>
 

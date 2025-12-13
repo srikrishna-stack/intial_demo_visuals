@@ -1,67 +1,18 @@
 
 import React from 'react';
 import NonProducingBuffaloGraph from '../BuffaloFamilyTree/GraphComponents/NonProducingBuffaloGraph';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from 'recharts';
+
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
 const HerdPerformance = ({ yearlyData, activeGraph, setActiveGraph }) => {
-  // Transform yearlyData for normal chart format
-  const chartData = yearlyData?.map(year => ({
-    year: year.year,
-    totalBuffaloes: year.totalBuffaloes,
-    producingBuffaloes: year.producingBuffaloes,
-    nonProducingBuffaloes: year.nonProducingBuffaloes
-  })) || [];
-
-  // Custom tooltip for line chart
-  const LineChartTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const data = chartData.find(d => d.year === label);
-      return (
-        <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-200">
-          <p className="font-bold text-gray-800 mb-2">Year: {label}</p>
-          {payload.map((entry, index) => (
-            <div key={index} className="flex items-center gap-2 mb-1">
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="text-gray-600">{entry.name}:</span>
-              <span className="font-bold text-gray-800">{entry.value}</span>
-            </div>
-          ))}
-          {data && (
-            <>
-              <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
-                <p className="text-sm text-gray-600">
-                  Producing: {data.producingBuffaloes} buffaloes
-                </p>
-                <p className="text-sm text-gray-600">
-                  Non-Producing: {data.nonProducingBuffaloes} buffaloes
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
+  // Transform yearlyData for reference, though we use yearlyData directly
+  const chartData = yearlyData || [];
 
   return (
-    <div className="mx-20">
-      <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-6 shadow-2xl border border-gray-200">
+    <div className="mx-4 lg:mx-10">
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-6 shadow-xl border border-gray-200">
         {/* Enhanced Toggle Navigation */}
-        <div className="flex flex-col items-center mb-6">
+        <div className="flex flex-col items-center mb-8">
           <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 p-1.5 rounded-xl shadow-inner border border-gray-200">
             {/* Background Slider */}
             <div
@@ -88,9 +39,6 @@ const HerdPerformance = ({ yearlyData, activeGraph, setActiveGraph }) => {
                 <span className={`font-semibold transition-all duration-200 ${activeGraph === "buffaloes" ? 'scale-105 text-base' : 'scale-100 text-sm'}`}>
                   Herd Growth
                 </span>
-                {activeGraph === "buffaloes" && (
-                  <div className="absolute -bottom-1 w-10 h-1 bg-white rounded-full shadow-md" />
-                )}
               </button>
 
               <button
@@ -105,51 +53,77 @@ const HerdPerformance = ({ yearlyData, activeGraph, setActiveGraph }) => {
                 `}
               >
                 <span className={`font-semibold transition-all duration-200 ${activeGraph === "nonproducing" ? 'scale-105 text-base' : 'scale-100 text-sm'}`}>
-                  Production 
+                  Production
                 </span>
-                {activeGraph === "nonproducing" && (
-                  <div className="absolute -bottom-1 w-10 h-1 bg-white rounded-full shadow-md" />
-                )}
               </button>
             </div>
           </div>
         </div>
 
         {/* Graph Container */}
-        <div className="mx-30 my-1">
+        <div className="min-h-[450px] flex items-center justify-center">
           {activeGraph === "buffaloes" && (
-            <div className="w-full h-[400px] p-4">
-              <ResponsiveContainer width="100%" height="90%">
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="year"
-                    stroke="#4b5563"
-                    tick={{ fill: '#6b7280' }}
-                  />
-                  <YAxis
-                    stroke="#4b5563"
-                    tick={{ fill: '#6b7280' }}
-                  />
-                  <Tooltip content={<LineChartTooltip />} />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="totalBuffaloes"
-                    name="Total Buffaloes"
-                    stroke="#4f46e5"
-                    strokeWidth={3}
-                    activeDot={{ r: 8 }}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="w-full overflow-x-auto pb-8 pt-4 custom-scrollbar">
+              <div className="flex items-start justify-start px-8 min-w-max mx-auto">
+                {chartData.map((yearData, index) => {
+                  const isLast = index === chartData.length - 1;
+                  const colors = [
+                    { border: 'border-pink-500', text: 'text-pink-600', ring: 'ring-pink-100', bg: 'bg-white' },
+                    { border: 'border-yellow-500', text: 'text-yellow-600', ring: 'ring-yellow-100', bg: 'bg-white' },
+                    { border: 'border-teal-500', text: 'text-teal-600', ring: 'ring-teal-100', bg: 'bg-white' },
+                    { border: 'border-blue-500', text: 'text-blue-600', ring: 'ring-blue-100', bg: 'bg-white' },
+                    { border: 'border-purple-500', text: 'text-purple-600', ring: 'ring-purple-100', bg: 'bg-white' },
+                  ];
+                  const color = colors[index % colors.length];
+
+                  return (
+                    <div key={yearData.year} className="flex flex-col items-center min-w-[140px] relative group">
+                      {/* Top: Circle and Arrow Line */}
+                      <div className="flex items-center w-full justify-center relative h-16">
+                        {/* Connector Line (Behind) */}
+                        <div className={`absolute top-1/2 left-1/2 w-full h-[3px] bg-gray-200 -z-0 ${isLast ? 'hidden' : ''}`}>
+                          {/* Arrow Head at the end of the segment */}
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-gray-300">
+                              <path d="M9 18l6-6-6-6" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Circle */}
+                        <div className={`w-14 h-14 rounded-full border-4 ${color.border} ${color.bg} flex items-center justify-center z-10 shadow-md group-hover:scale-110 transition-transform duration-300 ${color.ring} ring-4 ring-offset-2 ring-offset-white`}>
+                          <span className="font-bold text-gray-700 text-sm">{yearData.year}</span>
+                        </div>
+                      </div>
+
+                      {/* Vertical Connector */}
+                      <div className="h-8 w-[2px] bg-gray-300 my-1 border-l-2 border-dashed border-gray-300 opacity-50"></div>
+
+                      {/* Detail Box */}
+                      <div className={`
+                         p-4 rounded-2xl w-36 text-center shadow-sm hover:shadow-lg transition-all duration-300 border bg-white
+                         ${color.border} relative top-0 group-hover:-top-2
+                       `}>
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Total Herd</div>
+                        <div className={`text-3xl font-bold ${color.text} mb-3`}>{yearData.totalBuffaloes}</div>
+
+                        <div className="border-t border-gray-100 pt-3 space-y-2">
+                          <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 mb-1">
+                              <BarChart3 size={14} />
+                            </div>
+                            <span className="text-xs text-gray-500">Producing</span>
+                            <span className="font-bold text-gray-700">{yearData.producingBuffaloes}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
-          
+
           {activeGraph === "nonproducing" && (
             <div className="w-full">
               <NonProducingBuffaloGraph yearlyData={yearlyData} />

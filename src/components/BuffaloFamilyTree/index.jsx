@@ -15,7 +15,7 @@ export default function BuffaloFamilyTree() {
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [activeGraph, setActiveGraph] = useState("revenue");
+  const [activeGraph, setActiveGraph] = useState("buffaloes");
   const [activeTab, setActiveTab] = useState("familyTree");
 
   const containerRef = useRef(null);
@@ -64,32 +64,50 @@ export default function BuffaloFamilyTree() {
     }
   };
 
-  // Calculate annual revenue for ALL mature buffaloes with individual cycles
+  // Calculate annual revenue for herd using precise monthly age checks (>= 36 months for children)
   const calculateAnnualRevenueForHerd = (herd, startYear, startMonth, currentYear) => {
     let annualRevenue = 0;
 
-    const matureBuffaloes = herd.filter(buffalo => {
-      const ageInCurrentYear = currentYear - buffalo.birthYear;
-      return ageInCurrentYear >= 3;
-    });
+    // Track mature buffaloes for this year (set of IDs that were mature at any point)
+    const matureBuffaloIds = new Set();
 
-    matureBuffaloes.forEach((buffalo) => {
-      const acquisitionMonth = buffalo.acquisitionMonth;
+    for (let month = 0; month < 12; month++) {
+      herd.forEach(buffalo => {
+        let isProducing = false;
 
-      for (let month = 0; month < 12; month++) {
-        annualRevenue += calculateMonthlyRevenueForBuffalo(
-          buffalo.id,
-          acquisitionMonth,
-          currentYear,
-          month
-        );
-      }
-    });
+        if (buffalo.generation === 0) {
+          isProducing = true;
+        } else {
+          // Precise age check
+          const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
+          const ageInMonths = ((currentYear - buffalo.birthYear) * 12) + (month - birthMonth);
+          if (ageInMonths >= 36) {
+            isProducing = true;
+          }
+        }
+
+        if (isProducing) {
+          matureBuffaloIds.add(buffalo.id);
+
+          const revenue = calculateMonthlyRevenueForBuffalo(
+            buffalo.id,
+            buffalo.acquisitionMonth, // Cycle offset
+            currentYear,
+            month
+          );
+
+          annualRevenue += revenue;
+        }
+      });
+    }
+
+    const matureBuffaloes = matureBuffaloIds.size;
+    const totalBuffaloes = herd.filter(buffalo => buffalo.birthYear <= currentYear).length;
 
     return {
       annualRevenue,
-      matureBuffaloes: matureBuffaloes.length,
-      totalBuffaloes: herd.filter(buffalo => buffalo.birthYear <= currentYear).length
+      matureBuffaloes,
+      totalBuffaloes
     };
   };
 
