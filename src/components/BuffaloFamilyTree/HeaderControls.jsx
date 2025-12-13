@@ -1,5 +1,6 @@
 import React from 'react';
 import { Play, RotateCcw } from "lucide-react";
+import { formatCurrency } from './CommonComponents';
 
 const HeaderControls = ({
   units,
@@ -17,8 +18,8 @@ const HeaderControls = ({
   treeData,
   resetSimulation
 }) => {
-  const monthNames = ["January", "February", "March", "April", "May", "June", 
-                     "July", "August", "September", "October", "November", "December"];
+  const monthNames = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
 
   // Generate days array based on days in month
   const dayOptions = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -41,7 +42,7 @@ const HeaderControls = ({
           <h1 className="text-3xl font-bold text-gray-800 text-center md:text-left mb-4 md:mb-0 md:text-2xl lg:text-3xl">
             Buffalo Family Tree Simulator
           </h1>
-          
+
           {treeData && (
             <div className="flex items-center gap-3">
               <button
@@ -54,7 +55,7 @@ const HeaderControls = ({
             </div>
           )}
         </div>
-        
+
         {/* Controls grid */}
         <div className="flex md:grid-cols-2 lg:grid-cols-7 gap-5">
           {/* Starting Units */}
@@ -72,7 +73,7 @@ const HeaderControls = ({
               placeholder="1-10"
             />
           </div>
-          
+
           {/* Simulation Years */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
@@ -88,7 +89,7 @@ const HeaderControls = ({
               placeholder="1-50"
             />
           </div>
-          
+
           {/* Start Year */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
@@ -104,7 +105,7 @@ const HeaderControls = ({
               placeholder="2025-2100"
             />
           </div>
-          
+
           {/* Start Month */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
@@ -122,7 +123,7 @@ const HeaderControls = ({
               ))}
             </select>
           </div>
-          
+
           {/* Start Day */}
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">
@@ -140,17 +141,35 @@ const HeaderControls = ({
               ))}
             </select>
           </div>
-          
+
           {/* Run Simulation Button */}
           <div className="flex items-end lg:col-span-2">
             <button
               onClick={runSimulation}
-              className="w-full md:w-48 flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md text-base min-h-[48px]"
+              className="w-48 md:w-48 flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md text-base min-h-[48px]"
             >
               <Play size={20} />
-              Run Simulation
+              Run
             </button>
           </div>
+
+          {/* New Summary Metrics Section - Only visible when treeData exists */}
+          {treeData && treeData.summaryStats && (
+            <div className="flex items-center gap-6 lg:col-span-full xl:col-span-3 xl:ml-8 mt-4 xl:mt-8 border-t xl:border-t-0 xl:border-l border-gray-200 pt-4 xl:pt-0 xl:pl-8">
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Buffaloes</span>
+                <span className="text-xl font-bold text-gray-800">{treeData.summaryStats.totalBuffaloes}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Revenue (10Y)</span>
+                <span className="text-xl font-bold text-green-600">{formatCurrency(treeData.summaryStats.totalRevenue)}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Asset Value</span>
+                <span className="text-xl font-bold text-blue-600">{formatCurrency(treeData.summaryStats.totalAssetValue)}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

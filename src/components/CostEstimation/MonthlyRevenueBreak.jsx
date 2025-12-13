@@ -148,7 +148,7 @@ const MonthlyRevenueBreak = ({
   const cumulativeCPFCost = calculateCumulativeCPFCost();
   const cumulativeNetRevenue = totalCumulativeUntilYear - cumulativeCPFCost;
 
-  // Download Excel function
+  // Download Excel functionad
   const downloadExcel = () => {
     let csvContent = "Monthly Revenue Breakdown - Unit " + selectedUnit + " - " + selectedYear + "\n\n";
 
@@ -219,22 +219,46 @@ const MonthlyRevenueBreak = ({
 
   return (
     <div className="  px-10 py-2 mb-16 xl:mx-20">
-      {/* Navigation Bar Style Controls - Centered */}
-      <div className="flex flex-col md:flex-row items-center justify-center gap-6   px-4 py-2  my-2">
+      {/* Monthly Revenue Table */}
+      {unitBuffaloes.length > 0 ? (
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-lg">
 
-        {/* Year Selector */}
-        <div className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
-          <div className="relative bg-white rounded-xl border border-slate-200 px-4 py-2.5 min-w-[180px] shadow-sm">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-semibold text-slate-700 mr-3">
-                Select Year
-              </label>
-              <div className="relative">
+          {/* Header Controls Row */}
+          <div className="flex flex-col xl:flex-row justify-between items-center gap-4 mb-6">
+
+            {/* Left: Unit Selector */}
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-400 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+              <div className="relative bg-white rounded-xl border border-slate-200 px-3 py-2 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+                    Select Unit
+                  </label>
+                  <select
+                    value={selectedUnit}
+                    onChange={(e) => setSelectedUnit(parseInt(e.target.value))}
+                    className="bg-transparent font-medium text-slate-900 focus:outline-none cursor-pointer text-sm"
+                  >
+                    {Array.from({ length: treeData.units }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        Unit {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Center: Title & Year Selector */}
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2">
+                <h3 className="text-2xl font-bold text-slate-900">
+                  Monthly Revenue Breakdown -
+                </h3>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="appearance-none bg-white border border-slate-300 rounded-lg text-sm px-3 py-1.5 pr-8 text-slate-700 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 cursor-pointer"
+                  className="text-2xl font-bold text-slate-900 bg-transparent border-b-2 border-slate-300 focus:border-blue-500 focus:outline-none cursor-pointer py-1"
                 >
                   {Array.from({ length: 10 }, (_, i) => (
                     <option key={i} value={treeData.startYear + i}>
@@ -242,92 +266,45 @@ const MonthlyRevenueBreak = ({
                     </option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                  </svg>
-                </div>
+              </div>
+              <p className="text-slate-600 font-medium text-sm">
+                Unit {selectedUnit} • {unitBuffaloes.length} Buffalo{unitBuffaloes.length !== 1 ? 'es' : ''}
+              </p>
+              <div className="text-xs text-amber-600 mt-1">
+                B CPF: {selectedYear === 2026 ? 'Free (July-Dec 2026)' :
+                  selectedYear === 2027 ? 'Half year CPF (July-Dec 2027)' :
+                    selectedYear > 2027 ? 'Full CPF (₹13,000)' : 'No CPF'}
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Unit Selector */}
-        <div className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-400 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
-          <div className="relative bg-white rounded-xl border border-slate-200 px-4 py-2.5 min-w-[180px] shadow-sm">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-semibold text-slate-700 mr-3">
-                Select Unit
-              </label>
-              <div className="relative">
-                <select
-                  value={selectedUnit}
-                  onChange={(e) => setSelectedUnit(parseInt(e.target.value))}
-                  className="appearance-none bg-white border border-slate-300 rounded-lg text-sm px-3 py-1.5 pr-8 text-slate-700 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 cursor-pointer"
-                >
-                  {Array.from({ length: treeData.units }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      Unit {i + 1}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                  </svg>
+            {/* Right: Summary & Download */}
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              {/* Small Summary Card */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-4 py-2 shadow-sm text-right">
+                <div className="text-xs font-medium text-slate-600">
+                  Total Revenue ({treeData.startYear}-{selectedYear})
+                </div>
+                <div className="text-sm font-bold text-blue-700">
+                  {formatCurrency(totalCumulativeUntilYear)}
+                </div>
+                <div className="text-[10px] text-slate-500 mt-0.5">
+                  Net: <span className="font-semibold text-emerald-600">{formatCurrency(cumulativeNetRevenue)}</span>
                 </div>
               </div>
+
+              {/* Download Button */}
+              <button
+                onClick={downloadExcel}
+                className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white p-2 rounded-lg shadow hover:shadow-md hover:scale-105 transition-all text-sm flex items-center gap-2"
+                title="Download Excel"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span className="hidden sm:inline font-semibold">Download Excel</span>
+              </button>
             </div>
-          </div>
-        </div>
 
-        {/* Download Button */}
-        <div className="relative group">
-          <button
-            onClick={downloadExcel}
-            className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 min-w-[200px]"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-cyan-600 opacity-0 group-hover:opacity-100 transition duration-300"></div>
-            <svg className="relative w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            <span className="relative text-sm">Download Excel</span>
-          </button>
-        </div>
-
-      </div>
-
-      {/* Cumulative Revenue Summary */}
-      <div className='flex justify-center'>
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 text-center mb-4 w-full max-w-3xl shadow-sm border border-blue-200">
-          <div className="text-lg font-medium text-slate-800 xl:text-xl">
-            Total revenue generated by Unit {selectedUnit} from {treeData.startYear} to {selectedYear}:
-            <span className="ml-2 text-blue-600 font-bold">
-              {formatCurrency(totalCumulativeUntilYear)}
-            </span>
-          </div>
-          <div className="text-sm text-slate-600 mt-1">
-            Net Revenue after CPF: {formatCurrency(cumulativeNetRevenue)}
-          </div>
-        </div>
-      </div>
-
-      {/* Monthly Revenue Table */}
-      {unitBuffaloes.length > 0 ? (
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-lg">
-          <div className="mb-6">
-            <h3 className="text-2xl font-bold text-slate-900 mb-2 text-center">
-              Monthly Revenue Breakdown - {selectedYear}
-            </h3>
-            <p className="text-slate-600 text-center font-medium">
-              Unit {selectedUnit} • {unitBuffaloes.length} Buffalo{unitBuffaloes.length !== 1 ? 'es' : ''}
-            </p>
-            <div className="mt-2 text-sm text-amber-600 text-center">
-              B CPF: {selectedYear === 2026 ? 'Free (July-Dec 2026)' :
-                selectedYear === 2027 ? 'Half year CPF (July-Dec 2027)' :
-                  selectedYear > 2027 ? 'Full CPF (₹13,000)' : 'No CPF'}
-            </div>
           </div>
 
           <div className="overflow-x-auto rounded-lg border border-slate-200">
@@ -550,7 +527,7 @@ const MonthlyRevenueBreak = ({
           </div>
 
           {/* CPF Details Section */}
-          <div className="mt-8 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
+          {/* <div className="mt-8 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
             <h4 className="text-lg font-bold text-slate-800 mb-4">CPF Details for Unit {selectedUnit} - {selectedYear}</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {cpfCost.buffaloCPFDetails.map((detail, index) => (
@@ -565,7 +542,7 @@ const MonthlyRevenueBreak = ({
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
       ) : (
         <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl p-8 border border-amber-200 text-center shadow-sm">
@@ -575,8 +552,20 @@ const MonthlyRevenueBreak = ({
           <div className="text-2xl font-bold text-amber-900 mb-3">
             No Income Producing Buffaloes
           </div>
-          <div className="text-lg text-amber-800 mb-2">
-            There are no income-producing buffaloes in Unit {selectedUnit} for {selectedYear} (or not old enough yet).
+          <div className="text-lg text-amber-800 mb-2 flex items-center justify-center gap-2 flex-wrap">
+            There are no income-producing buffaloes in Unit {selectedUnit} for
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="text-lg font-bold text-amber-900 bg-transparent border-b-2 border-amber-400 focus:border-amber-600 focus:outline-none cursor-pointer"
+            >
+              {Array.from({ length: 10 }, (_, i) => (
+                <option key={i} value={treeData.startYear + i}>
+                  {treeData.startYear + i}
+                </option>
+              ))}
+            </select>
+            (or not old enough yet).
           </div>
           <div className="mt-6 pt-4 border-t border-amber-300">
             <div className="text-sm text-amber-600">

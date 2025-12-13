@@ -15,7 +15,9 @@ const AssetMarketValue = ({
   yearRange
 }) => {
   const [selectedYear, setSelectedYear] = useState(treeData.startYear);
+  const [breakdownYear, setBreakdownYear] = useState(treeData.startYear);
   const [selectedAssetData, setSelectedAssetData] = useState(null);
+  const [breakdownAssetData, setBreakdownAssetData] = useState(null);
   const [totalBuffaloes, setTotalBuffaloes] = useState(0);
 
   // Update selected asset data when year changes
@@ -41,6 +43,12 @@ const AssetMarketValue = ({
       setTotalBuffaloes(count);
     }
   }, [selectedYear, assetMarketValue, buffaloDetails]);
+
+  // Update breakdown asset data when breakdown year changes
+  useEffect(() => {
+    const assetData = assetMarketValue.find(a => a.year === breakdownYear) || assetMarketValue[0];
+    setBreakdownAssetData(assetData);
+  }, [breakdownYear, assetMarketValue]);
 
   // Age-Based Valuation Breakdown function for selected year
   const calculateDetailedAssetValueForYear = (year) => {
@@ -106,8 +114,8 @@ const AssetMarketValue = ({
   };
 
   // Helper function to get category count from asset data
-  const getCategoryCount = (categoryKey) => {
-    if (!selectedAssetData || !selectedAssetData.ageCategories) return 0;
+  const getCategoryCount = (categoryKey, dataSource = selectedAssetData) => {
+    if (!dataSource || !dataSource.ageCategories) return 0;
 
     // Try multiple possible key formats
     const keys = [
@@ -119,8 +127,8 @@ const AssetMarketValue = ({
     ].filter(Boolean);
 
     for (const key of keys) {
-      if (selectedAssetData.ageCategories[key]) {
-        return selectedAssetData.ageCategories[key].count || 0;
+      if (dataSource.ageCategories[key]) {
+        return dataSource.ageCategories[key].count || 0;
       }
     }
 
@@ -128,8 +136,8 @@ const AssetMarketValue = ({
   };
 
   // Helper function to get category value from asset data
-  const getCategoryValue = (categoryKey) => {
-    if (!selectedAssetData || !selectedAssetData.ageCategories) return 0;
+  const getCategoryValue = (categoryKey, dataSource = selectedAssetData) => {
+    if (!dataSource || !dataSource.ageCategories) return 0;
 
     const keys = [
       categoryKey,
@@ -140,8 +148,8 @@ const AssetMarketValue = ({
     ].filter(Boolean);
 
     for (const key of keys) {
-      if (selectedAssetData.ageCategories[key]) {
-        return selectedAssetData.ageCategories[key].value || 0;
+      if (dataSource.ageCategories[key]) {
+        return dataSource.ageCategories[key].value || 0;
       }
     }
 
@@ -150,7 +158,7 @@ const AssetMarketValue = ({
 
   if (isAssetMarketValue) {
     // This is the Asset Market Value component
-    if (!selectedAssetData) {
+    if (!selectedAssetData || !breakdownAssetData) {
       return <div>Loading asset data...</div>;
     }
 
@@ -158,50 +166,38 @@ const AssetMarketValue = ({
 
     return (
       <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-3xl p-8 shadow-xl border border-gray-200 mb-16 mx-4 lg:mx-20">
-        {/* Combined Year Selection and Summary */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-white rounded-2xl p-6 border border-gray-300 shadow-sm max-w-3xl w-full">
-            <div className="flex flex-col lg:flex-row items-center gap-6">
-              {/* Year Selection */}
-              <div className="flex-1 min-w-0">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Select Year for Valuation:
-                </label>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                >
-                  {assetMarketValue.map((asset, index) => (
-                    <option key={index} value={asset.year}>
-                      {asset.year} (Year {asset.year - treeData.startYear + 1})
-                    </option>
-                  ))}
-                </select>
-              </div>
 
-              {/* Divider */}
-              <div className="hidden lg:block h-14 w-px bg-gray-300"></div>
-
-              {/* Total Value Display */}
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl p-5 text-white flex-1 min-w-0 text-center shadow-md">
-                <div className="text-xs font-semibold mb-1 text-blue-100">Total Asset Value</div>
-                <div className="text-2xl font-bold mb-1">
-                  {formatCurrency(detailedValue.totalValue || 0)}
-                </div>
-                <div className="text-xs text-blue-200">
-                  {detailedValue.totalCount} buffaloes
-                  {detailedValue.ageGroups['60+ months (Mother Buffalo)'].count > 0 ?
-                    ` · ${detailedValue.ageGroups['60+ months (Mother Buffalo)'].count} mothers` : ''}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Age-Based Valuation Breakdown Table */}
         <div className="bg-white rounded-2xl p-6 border border-gray-300 shadow-sm mb-8 mx-4 lg:mx-20">
-          <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Age-Based Valuation Breakdown</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 mb-6">
+            <div className="flex items-center gap-3 justify-self-start w-full md:w-auto">
+              <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">Select Year:</label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="py-1 px-3 border border-gray-300 rounded-lg text-sm bg-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                {assetMarketValue.map((asset, index) => (
+                  <option key={index} value={asset.year}>
+                    {asset.year}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-800 text-center justify-self-center md:whitespace-nowrap">
+              Age-Based Valuation Breakdown
+            </h3>
+
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-2 rounded-lg shadow-sm flex items-center gap-3 justify-self-end w-full md:w-auto justify-between md:justify-start">
+              <span className="text-sm font-medium opacity-90">Total Value:</span>
+              <span className="text-xl font-bold">{formatCurrency(detailedValue.totalValue || 0)}</span>
+              <span className="text-xs opacity-75 border-l border-white/30 pl-3 ml-1">
+                {detailedValue.totalCount} Buffaloes
+              </span>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -279,14 +275,30 @@ const AssetMarketValue = ({
           </div>
         </div>
 
-        {/* Compact Age Category Table - Using assetMarketValue data */}
+        {/* Compact Age Category Table - Using breakdownAssetData data */}
         <div className="bg-white rounded-xl p-6 border border-gray-300 shadow-sm mb-8 mx-4 lg:mx-20">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-800">
-              Age-Based Asset Breakdown - {selectedYear}
+          <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 mb-6">
+            <div className="flex items-center gap-3 justify-self-start w-full md:w-auto">
+              <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">Select Year:</label>
+              <select
+                value={breakdownYear}
+                onChange={(e) => setBreakdownYear(parseInt(e.target.value))}
+                className="py-1 px-3 border border-gray-300 rounded-lg text-sm bg-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                {assetMarketValue.map((asset, index) => (
+                  <option key={index} value={asset.year}>
+                    {asset.year}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-800 text-center justify-self-center md:whitespace-nowrap">
+              Age-Based Asset Breakdown
             </h3>
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-2 rounded-lg font-bold">
-              {formatCurrency(selectedAssetData.totalAssetValue || 0)}
+
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-2 rounded-lg font-bold justify-self-end w-full md:w-auto text-center md:text-right">
+              {formatCurrency(breakdownAssetData.totalAssetValue || 0)}
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -313,12 +325,12 @@ const AssetMarketValue = ({
                   { category: '48-60 months', unitValue: 150000 },
                   { category: '60+ months (Mother Buffalo)', unitValue: 175000 }
                 ].map((item, index) => {
-                  const count = getCategoryCount(item.category);
-                  console.log(count);
+                  const count = getCategoryCount(item.category, breakdownAssetData);
+                  // console.log(count);
 
-                  const value = getCategoryValue(item.category);
-                  const percentage = selectedAssetData.totalAssetValue > 0
-                    ? (value / selectedAssetData.totalAssetValue * 100).toFixed(1)
+                  const value = getCategoryValue(item.category, breakdownAssetData);
+                  const percentage = breakdownAssetData.totalAssetValue > 0
+                    ? (value / breakdownAssetData.totalAssetValue * 100).toFixed(1)
                     : 0;
 
                   return (
@@ -356,9 +368,15 @@ const AssetMarketValue = ({
                 <tr className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
                   <td className="px-6 py-4 font-bold">Total</td>
                   <td className="px-6 py-4 font-bold">-</td>
-                  <td className="px-6 py-4 font-bold">{totalBuffaloes}</td>
                   <td className="px-6 py-4 font-bold">
-                    {formatCurrency(selectedAssetData.totalAssetValue || 0)}
+                    {(() => {
+                      let total = 0;
+                      Object.values(breakdownAssetData.ageCategories || {}).forEach(cat => total += cat.count || 0);
+                      return total;
+                    })()}
+                  </td>
+                  <td className="px-6 py-4 font-bold">
+                    {formatCurrency(breakdownAssetData.totalAssetValue || 0)}
                   </td>
                   <td className="px-6 py-4 font-bold">100%</td>
                 </tr>

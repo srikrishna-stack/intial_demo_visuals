@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import HeaderControls from './HeaderControls';
 import TreeVisualization from './TreeVisualization';
-import { formatCurrency, formatNumber } from './CommonComponents';
+import { formatCurrency, formatNumber, calculateAgeInMonths, getBuffaloValueByAge } from './CommonComponents';
 import CostEstimationTable from "../CostEstimation/CostEstimationTable";
 
 export default function BuffaloFamilyTree() {
@@ -214,6 +214,19 @@ export default function BuffaloFamilyTree() {
       // Calculate revenue data based on ACTUAL herd growth with staggered cycles
       const revenueData = calculateRevenueData(herd, startYear, startMonth, totalYears);
 
+      // Calculate total asset value at the end of simulation
+      const endYear = startYear + totalYears - 1;
+      let totalAssetValue = 0;
+      herd.forEach(buffalo => {
+        // Assume December of the last year for validation
+        const ageInMonths = calculateAgeInMonths(buffalo, endYear, 11);
+
+        // Only count buffaloes born before or in the last year
+        if (buffalo.birthYear <= endYear) {
+          totalAssetValue += getBuffaloValueByAge(ageInMonths);
+        }
+      });
+
       setTreeData({
         units,
         years,
@@ -222,7 +235,13 @@ export default function BuffaloFamilyTree() {
         startDay,
         totalBuffaloes: herd.length,
         buffaloes: herd,
-        revenueData: revenueData
+        revenueData: revenueData,
+        summaryStats: {
+          totalBuffaloes: herd.length,
+          totalRevenue: revenueData.totalRevenue,
+          totalAssetValue: totalAssetValue,
+          duration: totalYears
+        }
       });
 
       setLoading(false);

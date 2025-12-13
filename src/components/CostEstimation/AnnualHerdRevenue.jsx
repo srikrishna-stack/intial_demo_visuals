@@ -21,11 +21,9 @@ const AnnualHerdRevenue = ({
         <div className="p-4 max-w-lg w-full ">
           <div className="flex flex-col items-center">
             <h2 className="text-2xl font-bold text-slate-800 mb-1">
-              Annual Herd Revenue Analysis
+              Annual Herd Revenue Analysis(with CPF)
             </h2>
-            <div className="px-3 py-1 bg-green-100 text-green-700 text-lg font-semibold rounded-full">
-              with CPF
-            </div>
+           
           </div>
         </div>
       </div>
