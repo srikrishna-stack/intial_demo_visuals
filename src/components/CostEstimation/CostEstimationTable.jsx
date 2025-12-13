@@ -45,102 +45,46 @@ const CostEstimationTable = ({
 
   const getBuffaloDetails = () => {
     const buffaloDetails = {};
-    let buffaloCounter = 1;
 
+    // First pass: Create all buffalo entries
     treeData.buffaloes.forEach(buffalo => {
-      if (buffalo.generation === 0) {
-        const unit = buffalo.unit || 1;
-        const buffaloId = `M${buffaloCounter}`;
+      // Determine acquisition/birth month logic
+      // For Gen 0, acquisitionMonth is set.
+      // For Gen > 0, we can use birthMonth if available or inherit from parent acquisition if consistent.
+      // In the new treeData, acquisitionMonth is passed down.
 
-        // M2 (2nd buffalo) lands in July 2026 (Month 6)
-        // M1 lands in Jan 2026 (Month 0)
-        // We identify M2 by buffaloCounter being 2 (or checking buffalo.id if reliable, but counter is safer here as per generation loop)
-        const isM2 = buffaloCounter === 2;
+      const birthMonth = buffalo.generation === 0 ? (buffalo.acquisitionMonth || 0) : (buffalo.acquisitionMonth || 0);
 
-        const acquisitionMonth = isM2 ? 6 : (buffalo.acquisitionMonth || 0);
-        const baseMonth = isM2 ? 6 : (buffalo.birthMonth || 0);
-
-        buffaloDetails[buffalo.id] = {
-          id: buffaloId,
-          originalId: buffalo.id,
-          generation: buffalo.generation,
-          unit: unit,
-          acquisitionMonth: acquisitionMonth,
-          birthYear: treeData.startYear - 5,
-          birthMonth: baseMonth,
-          parentId: buffalo.parentId,
-          children: [],
-          grandchildren: []
-        };
-        buffaloCounter++;
-      }
+      buffaloDetails[buffalo.id] = {
+        id: buffalo.id,
+        originalId: buffalo.id,
+        generation: buffalo.generation,
+        unit: buffalo.unit,
+        acquisitionMonth: buffalo.acquisitionMonth,
+        birthYear: buffalo.birthYear,
+        birthMonth: birthMonth,
+        parentId: buffalo.parentId,
+        children: [],
+        grandchildren: []
+      };
     });
 
-    let calfCounter = 1;
+    // Second pass: Link relationships
     treeData.buffaloes.forEach(buffalo => {
-      if (buffalo.generation === 1 && buffalo.isInitialCalf) {
-        const unit = buffalo.unit || 1;
-        const mother = Object.values(buffaloDetails).find(b =>
-          b.unit === unit && b.generation === 0
-        );
-        if (mother) {
-          const calfId = `${mother.id}C${calfCounter}`;
-          buffaloDetails[buffalo.id] = {
-            id: calfId,
-            originalId: buffalo.id,
-            generation: buffalo.generation,
-            unit: unit,
-            acquisitionMonth: mother.acquisitionMonth,
-            birthYear: treeData.startYear,
-            birthMonth: mother.birthMonth, // Inherit base month from mother (0 or 6)
-            parentId: mother.originalId,
-            children: [],
-            grandchildren: []
-          };
-          mother.children.push(buffalo.id);
-          calfCounter++;
-        }
-      }
-    });
+      if (buffalo.parentId && buffaloDetails[buffalo.parentId]) {
+        const parent = buffaloDetails[buffalo.parentId];
+        parent.children.push(buffalo.id);
 
-    treeData.buffaloes.forEach(buffalo => {
-      if (buffalo.generation === 1 && !buffalo.isInitialCalf) {
-        const parent = Object.values(buffaloDetails).find(b => b.originalId === buffalo.parentId);
-        if (parent) {
-          const childId = `${parent.id}C${parent.children.length + 1}`;
-          buffaloDetails[buffalo.id] = {
-            id: childId,
-            originalId: buffalo.id,
-            generation: buffalo.generation,
-            unit: parent.unit,
-            acquisitionMonth: parent.acquisitionMonth,
-            birthYear: buffalo.birthYear,
-            birthMonth: parent.birthMonth, // Inherit base month from parent
-            parentId: buffalo.parentId,
-            children: [],
-            grandchildren: []
-          };
-          parent.children.push(buffalo.id);
-        }
-      } else if (buffalo.generation === 2) {
-        const grandparent = Object.values(buffaloDetails).find(b =>
-          b.children.includes(buffalo.parentId)
-        );
-        if (grandparent) {
-          const grandchildId = `${grandparent.id}GC${grandparent.grandchildren.length + 1}`;
-          buffaloDetails[buffalo.id] = {
-            id: grandchildId,
-            originalId: buffalo.id,
-            generation: buffalo.generation,
-            unit: grandparent.unit,
-            acquisitionMonth: grandparent.acquisitionMonth,
-            birthYear: buffalo.birthYear,
-            birthMonth: grandparent.birthMonth, // Inherit base month from grandparent
-            parentId: buffalo.parentId,
-            children: [],
-            grandchildren: []
-          };
-          grandparent.grandchildren.push(buffalo.id);
+        // If parent is a child (generation 1), then this buffalo is a grandchild (generation 2)
+        // We also want to link it to the grandparent for CostEstimationTable structure if needed,
+        // though the current code only explicitly tracks grandchildren for the grandparent object?
+        // The original code was: grandparent.grandchildren.push(buffalo.id)
+
+        if (parent.generation === 1) {
+          const grandparent = buffaloDetails[parent.parentId];
+          if (grandparent) {
+            grandparent.grandchildren.push(buffalo.id);
+          }
         }
       }
     });
@@ -167,32 +111,26 @@ const CostEstimationTable = ({
           for (let month = 0; month < 12; month++) {
             let isCpfApplicable = false;
 
-            if (buffalo.id === 'M1') {
-              // M1 pays CPF from start (assuming acquired at start of year or fully applicable)
-              // Typically M1 is year-round
+            if (buffalo.id === 'A') {
+              // A (was M1) pays CPF from start
               isCpfApplicable = true;
-            } else if (buffalo.id === 'M2') {
-              // M2 Free Period: July 2026 to June 2027 (Start Year to Start Year + 1)
-              // M2 Acquired: July 2026.
-              // M2 Present from July 2026 onwards.
+            } else if (buffalo.id === 'B') {
+              // B (was M2) Free Period: July 2026 to June 2027
 
               // Check if buffalo is present (acquired/born)
-              // M2 acquisition is Month 6 of Start Year.
               const isPresent = year > buffalo.birthYear || (year === buffalo.birthYear && month >= buffalo.acquisitionMonth);
 
               if (isPresent) {
                 // Check Free Period
                 const startYear = treeData.startYear;
                 // Free Period: July of Start Year to June of Start Year + 1
-                // Free Indices: (StartYear, 6..11) and (StartYear+1, 0..5)
-
                 const isFreePeriod = (year === startYear && month >= 6) || (year === startYear + 1 && month <= 5);
 
                 if (!isFreePeriod) {
                   isCpfApplicable = true;
                 }
               }
-            } else if (buffalo.generation === 1 || buffalo.generation === 2) {
+            } else if (buffalo.generation >= 1) {
               // Child CPF: Age >= 36 months
               const ageInMonths = calculateAgeInMonths(buffalo, year, month);
               if (ageInMonths >= 36) {
@@ -578,7 +516,7 @@ const CostEstimationTable = ({
       let totalAssetValue = 0;
 
       const ageCategories = {
-        '0-6 months': { count: 0, value: 0 },
+        '0-6 months (Calves)': { count: 0, value: 0 },
         '6-12 months': { count: 0, value: 0 },
         '12-18 months': { count: 0, value: 0 },
         '18-24 months': { count: 0, value: 0 },
@@ -624,8 +562,8 @@ const CostEstimationTable = ({
             ageCategories['6-12 months'].count++;
             ageCategories['6-12 months'].value += value;
           } else {
-            ageCategories['0-6 months'].count++;
-            ageCategories['0-6 months'].value += value;
+            ageCategories['0-6 months (Calves)'].count++;
+            ageCategories['0-6 months (Calves)'].value += value;
           }
         }
       });

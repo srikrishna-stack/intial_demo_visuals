@@ -61,25 +61,20 @@ const TreeVisualization = ({
 
   // Function to get buffalo display name (A1, A2, etc.)
   const getBuffaloDisplayName = (buffalo) => {
-    return `A${buffalo.id}`;
+    return buffalo.id;
   };
 
   return (
     <div
-      className="flex-1 relative overflow-auto"
+      className="w-full h-full relative overflow-auto"
       ref={containerRef}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      style={{
-        cursor: isDragging ? 'grabbing' : 'auto'
-      }}
+    /* Native scroll enabled, drag handlers removed */
     >
       {/* Controls Info */}
       <div className="absolute top-6 left-6 z-10 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-gray-200">
         <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
           <Move size={16} />
-          <span>Drag to pan | Scroll to zoom</span>
+          <span>Scroll to pan | Ctrl+Scroll to zoom</span>
         </div>
         <div className="text-sm text-gray-600 mb-3">Use buttons to reset zoom</div>
 
@@ -132,17 +127,16 @@ const TreeVisualization = ({
       {/* Tree Visualization Container */}
       <div
         ref={treeContainerRef}
-        className="w-full h-full p-10"
+        className="inline-block p-10 min-w-full min-h-full" /* inline-block allows expansion */
         style={{
-          transform: `scale(${zoom}) translate(${position.x}px, ${position.y}px)`,
-          transition: isDragging ? 'none' : 'transform 0.1s ease',
-          minWidth: `${100 * zoom}%`,
-          minHeight: `${100 * zoom}%`,
-          transformOrigin: '0 0'
+          transform: `scale(${zoom})`,
+          transformOrigin: '0 0',
+          width: 'max-content',
+          height: 'max-content'
         }}
       >
-        {/* flex-nowrap to prevent wrapping, min-w-max to ensure full width */}
-        <div className="flex flex-wrap gap-10 justify-center">
+        {/* flex-col to stack roots vertically (A on top of B) */}
+        <div className="flex flex-col gap-24 items-start">
           {treeData.buffaloes
             .filter((b) => b.parentId === null)
             .map((founder) => (

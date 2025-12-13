@@ -144,30 +144,35 @@ export default function BuffaloFamilyTree() {
     setTimeout(() => {
       const totalYears = Number(years);
       const herd = [];
-      let nextId = 1;
 
       // Create initial buffaloes (2 per unit) with staggered acquisition
+      const offspringCounts = {}; // Track number of children for each parent
+
       for (let u = 0; u < units; u++) {
         // First buffalo - acquired in January
+        // Unit 1: A, Unit 2: C, etc.
+        const id1 = String.fromCharCode(65 + (u * 2));
         herd.push({
-          id: nextId++,
-          age: 3,
+          id: id1,
+          age: 5,
           mature: true,
           parentId: null,
           generation: 0,
-          birthYear: startYear - 3,
+          birthYear: startYear - 5,
           acquisitionMonth: startMonth,
           unit: u + 1,
         });
 
         // Second buffalo - acquired in July (6 months later)
+        // Unit 1: B, Unit 2: D, etc.
+        const id2 = String.fromCharCode(65 + (u * 2) + 1);
         herd.push({
-          id: nextId++,
-          age: 3,
+          id: id2,
+          age: 5,
           mature: true,
           parentId: null,
           generation: 0,
-          birthYear: startYear - 3,
+          birthYear: startYear - 5,
           acquisitionMonth: (startMonth + 6) % 12,
           unit: u + 1,
         });
@@ -180,13 +185,20 @@ export default function BuffaloFamilyTree() {
 
         // Each mature buffalo gives birth to one offspring per year
         matureBuffaloes.forEach((parent) => {
+          if (!offspringCounts[parent.id]) {
+            offspringCounts[parent.id] = 0;
+          }
+          offspringCounts[parent.id]++;
+
+          const newId = `${parent.id}${offspringCounts[parent.id]}`;
+
           herd.push({
-            id: nextId++,
+            id: newId,
             age: 0,
             mature: false,
             parentId: parent.id,
             birthYear: currentYear,
-            acquisitionMonth: parent.acquisitionMonth,
+            acquisitionMonth: parent.acquisitionMonth, // Inherits cycle offset
             generation: parent.generation + 1,
             unit: parent.unit,
           });
@@ -294,18 +306,9 @@ export default function BuffaloFamilyTree() {
 
     const x = (containerRect.width - scaledContentWidth) / 2;
     const y = (containerRect.height - scaledContentHeight) / 2;
-
     setZoom(constrainedZoom);
     setPosition({ x: x > 0 ? x : 0, y: y > 0 ? y : 0 }); // If negative (shouldn't be if we fit), clamp to 0
   };
-
-  // Auto-fit on initial data load
-  useEffect(() => {
-    if (treeData) {
-      // Small timeout to allow DOM to render
-      setTimeout(handleFitToScreen, 100);
-    }
-  }, [treeData]);
 
   // Drag to pan functionality
   const handleMouseDown = (e) => {

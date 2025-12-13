@@ -14,7 +14,7 @@ const lineColors = [
 // Colors array for different generations
 export const colors = [
   "bg-gradient-to-br from-amber-400 to-amber-600",
-  "bg-gradient-to-br from-indigo-400 to-indigo-600", 
+  "bg-gradient-to-br from-indigo-400 to-indigo-600",
   "bg-gradient-to-br from-teal-400 to-teal-600",
   "bg-gradient-to-br from-pink-400 to-pink-600",
   "bg-gradient-to-br from-red-400 to-red-600",
@@ -41,8 +41,8 @@ export const buildTree = (root, all) => {
   return all.filter((b) => b.parentId === root.id);
 };
 
-// Buffalo Node Component - Updated to accept elementId
-export const BuffaloNode = ({ data, founder, displayName, elementId }) => (
+// Buffalo Node Component - Updated to accept elementId and parentDisplayName
+export const BuffaloNode = ({ data, founder, displayName, elementId, parentDisplayName }) => (
   <div id={elementId} className="flex flex-col items-center group relative">
     <div
       className={`${colors[data.generation % colors.length]}
@@ -51,7 +51,7 @@ export const BuffaloNode = ({ data, founder, displayName, elementId }) => (
         hover:scale-110 border-2 border-white`}
     >
       <div className="text-sm font-bold">
-        {founder ? displayName : data.birthYear}
+        {displayName}
       </div>
       <div className="text-[9px] opacity-90 bg-black bg-opacity-20 px-1 rounded">
         Gen {data.generation}
@@ -64,7 +64,7 @@ export const BuffaloNode = ({ data, founder, displayName, elementId }) => (
       </div>
       {!founder && (
         <div className="text-[9px] text-gray-500 mt-0.5">
-          Parent: {displayName}
+          Parent: {parentDisplayName}
         </div>
       )}
     </div>
@@ -75,7 +75,7 @@ export const BuffaloNode = ({ data, founder, displayName, elementId }) => (
 export const TreeBranch = ({ parent, all, level = 0, getDisplayName, zoom = 1 }) => {
   const kids = buildTree(parent, all);
   const [forceUpdate, setForceUpdate] = useState(0);
-  
+
   if (kids.length === 0) return null;
 
   // Force update arrows when zoom changes
@@ -90,7 +90,7 @@ export const TreeBranch = ({ parent, all, level = 0, getDisplayName, zoom = 1 })
     <div className="flex flex-col items-center mt-6">
       {/* Connecting line from parent */}
       <div className="h-10 w-0.5 bg-gradient-to-b from-gray-300 to-gray-400"></div>
-      
+
       <div className="flex flex-wrap gap-6 justify-center items-start relative">
         {kids.map((child, index) => {
           const parentId = `buffalo-${parent.id}`;
@@ -102,6 +102,7 @@ export const TreeBranch = ({ parent, all, level = 0, getDisplayName, zoom = 1 })
               <BuffaloNode
                 data={child}
                 displayName={getDisplayName(child)}
+                parentDisplayName={getDisplayName(parent)}
                 elementId={childId}
               />
 

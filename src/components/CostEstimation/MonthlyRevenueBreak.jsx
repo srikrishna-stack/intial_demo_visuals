@@ -34,12 +34,12 @@ const MonthlyRevenueBreak = ({
 
   // Helper to check precise CPF applicability
   const isCpfApplicableForMonth = (buffalo, year, month) => {
-    if (buffalo.id === 'M1') {
+    if (buffalo.id === 'A') {
       return true;
-    } else if (buffalo.id === 'M2') {
+    } else if (buffalo.id === 'B') {
       // Check if buffalo is present (acquired/born)
       // For Gen 0 (Mothers), they are acquired in startYear.
-      // M2 is acquired in Month 6 of startYear.
+      // B is acquired in Month 6 of startYear.
       let isPresent = false;
       if (buffalo.generation === 0) {
         const startYear = treeData.startYear;
@@ -57,7 +57,7 @@ const MonthlyRevenueBreak = ({
           return true;
         }
       }
-    } else if (buffalo.generation === 1 || buffalo.generation === 2) {
+    } else if (buffalo.generation >= 1) {
       // Child CPF: Age >= 36 months
       const ageInMonths = calculateAgeInMonths(buffalo, year, month);
       if (ageInMonths >= 36) {
@@ -95,7 +95,7 @@ const MonthlyRevenueBreak = ({
       let reason = "No CPF";
       if (monthsWithCPF === 12) reason = "Full Year";
       else if (monthsWithCPF > 0) reason = `Partial (${monthsWithCPF} months)`;
-      else if (buffalo.id === 'M2' && selectedYear <= treeData.startYear + 1) reason = "Free Period";
+      else if (buffalo.id === 'B' && selectedYear <= treeData.startYear + 1) reason = "Free Period";
       else if (buffalo.generation > 0) reason = "Age < 3 years";
 
       // Only add to details if relevant (generating income or has CPF)
@@ -324,7 +324,7 @@ const MonthlyRevenueBreak = ({
               Unit {selectedUnit} • {unitBuffaloes.length} Buffalo{unitBuffaloes.length !== 1 ? 'es' : ''}
             </p>
             <div className="mt-2 text-sm text-amber-600 text-center">
-              M2 CPF: {selectedYear === 2026 ? 'Free (July-Dec 2026)' :
+              B CPF: {selectedYear === 2026 ? 'Free (July-Dec 2026)' :
                 selectedYear === 2027 ? 'Half year CPF (July-Dec 2027)' :
                   selectedYear > 2027 ? 'Full CPF (₹13,000)' : 'No CPF'}
             </div>
@@ -587,7 +587,7 @@ const MonthlyRevenueBreak = ({
       )}
       {/* Dynamic Calculation Note */}
       <div className="mt-8 text-center text-sm text-slate-500">
-        Note: M2 gets one year free CPF from import date (July {treeData.startYear} to June {treeData.startYear + 1}).
+        Note: B gets one year free CPF from import date (July {treeData.startYear} to June {treeData.startYear + 1}).
         CPF calculation: ₹13,000 per buffalo per year (calculated monthly).
       </div>
 
