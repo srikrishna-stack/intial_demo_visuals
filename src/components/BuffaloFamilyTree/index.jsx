@@ -227,6 +227,83 @@ export default function BuffaloFamilyTree() {
         }
       });
 
+      // --- Calculate Total Financials (Revenue & Net) Matching CostEstimationTable logic ---
+      const calculateTotalFinancials = () => {
+        const CPF_PER_MONTH = 13000 / 12;
+        let totalRoundedRevenue = 0;
+        let totalRoundedCPFCost = 0;
+
+        for (let year = startYear; year <= endYear; year++) {
+          let annualRevenue = 0;
+          let annualCPF = 0;
+
+          for (let month = 0; month < 12; month++) {
+            herd.forEach(buffalo => {
+              // --- Revenue Calculation ---
+              let isRevenueApplicable = true;
+              if (buffalo.generation >= 1) {
+                const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
+                const ageInMonths = ((year - buffalo.birthYear) * 12) + (month - birthMonth);
+                if (ageInMonths < 36) {
+                  isRevenueApplicable = false;
+                }
+              }
+
+              if (isRevenueApplicable) {
+                const revenue = calculateMonthlyRevenueForBuffalo(
+                  buffalo.id,
+                  buffalo.acquisitionMonth,
+                  year,
+                  month
+                );
+                if (revenue > 0) {
+                  annualRevenue += revenue;
+                }
+              }
+
+              // --- CPF Calculation ---
+              let isCpfApplicable = false;
+              if (buffalo.generation === 0) {
+                const isFirstInUnit = (buffalo.id.charCodeAt(0) - 65) % 2 === 0;
+                if (isFirstInUnit) {
+                  isCpfApplicable = true;
+                } else {
+                  // Type B: Free Period Check
+                  // Fix: Check presence based on simulation start interaction, not birth year, to avoid charging CPF before acquisition
+                  const isPresentInSimulation = year > startYear || (year === startYear && month >= buffalo.acquisitionMonth);
+
+                  if (isPresentInSimulation) {
+                    const isFreePeriod = (year === startYear && month >= 6) || (year === startYear + 1 && month <= 5);
+                    if (!isFreePeriod) {
+                      isCpfApplicable = true;
+                    }
+                  }
+                }
+              } else {
+                const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
+                const ageInMonths = ((year - buffalo.birthYear) * 12) + (month - birthMonth);
+                if (ageInMonths >= 36) {
+                  isCpfApplicable = true;
+                }
+              }
+
+              if (isCpfApplicable) {
+                annualCPF += CPF_PER_MONTH;
+              }
+            });
+          }
+          totalRoundedRevenue += annualRevenue;
+          totalRoundedCPFCost += Math.round(annualCPF);
+        }
+
+        return {
+          totalRevenue: totalRoundedRevenue,
+          totalNetRevenue: totalRoundedRevenue - totalRoundedCPFCost
+        };
+      };
+
+      const { totalRevenue, totalNetRevenue } = calculateTotalFinancials();
+
       setTreeData({
         units,
         years,
@@ -238,7 +315,8 @@ export default function BuffaloFamilyTree() {
         revenueData: revenueData,
         summaryStats: {
           totalBuffaloes: herd.length,
-          totalRevenue: revenueData.totalRevenue,
+          totalRevenue: totalRevenue,
+          totalNetRevenue: totalNetRevenue,
           totalAssetValue: totalAssetValue,
           duration: totalYears
         }

@@ -161,8 +161,8 @@ const HeaderControls = ({
                 <span className="text-xl font-bold text-gray-800">{treeData.summaryStats.totalBuffaloes}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Revenue (10Y)</span>
-                <span className="text-xl font-bold text-green-600">{formatCurrency(treeData.summaryStats.totalRevenue)}</span>
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Cumulative Net</span>
+                <span className="text-xl font-bold text-green-600">{formatCurrency(treeData.summaryStats.totalNetRevenue)}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Asset Value</span>

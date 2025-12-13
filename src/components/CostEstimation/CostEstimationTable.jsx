@@ -647,38 +647,8 @@ const CostEstimationTable = ({
   };
 
   const calculateCumulativeRevenueUntilYear = (unit, selectedYear) => {
-    const buffaloDetails = getBuffaloDetails();
-    const unitBuffaloes = Object.values(buffaloDetails).filter(buffalo => buffalo.unit === unit);
     const cumulativeRevenue = {};
-
-    const monthlyRevenue = {};
-    for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
-      monthlyRevenue[year] = {};
-      for (let month = 0; month < 12; month++) {
-        monthlyRevenue[year][month] = {
-          total: 0,
-          buffaloes: {}
-        };
-      }
-    }
-
-    unitBuffaloes.forEach(buffalo => {
-      for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
-        if (year >= buffalo.birthYear + 3) {
-          for (let month = 0; month < 12; month++) {
-            const revenue = calculateMonthlyRevenueForBuffalo(
-              buffalo.acquisitionMonth,
-              month,
-              year,
-              treeData.startYear
-            );
-            if (revenue > 0) {
-              monthlyRevenue[year][month].buffaloes[buffalo.id] = revenue;
-            }
-          }
-        }
-      }
-    });
+    const unitBuffaloes = Object.values(buffaloDetails).filter(buffalo => buffalo.unit === unit);
 
     unitBuffaloes.forEach(buffalo => {
       let total = 0;
