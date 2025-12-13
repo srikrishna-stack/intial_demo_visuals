@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, RotateCcw, Calendar } from "lucide-react";
+import { Play, RotateCcw, Calendar, Loader2 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { formatCurrency } from './CommonComponents';
@@ -18,7 +18,8 @@ const HeaderControls = ({
   daysInMonth,
   runSimulation,
   treeData,
-  resetSimulation
+  resetSimulation,
+  loading
 }) => {
   const monthNames = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
@@ -106,9 +107,10 @@ const HeaderControls = ({
           <div className="flex pb-0.5">
             <button
               onClick={runSimulation}
-              className="w-32 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-1.5 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md text-sm min-h-[34px]"
+              disabled={loading}
+              className={`w-32 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-1.5 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md text-sm min-h-[34px] ${loading ? 'opacity-80 cursor-not-allowed' : ''}`}
             >
-              Submit
+              {loading ? <Loader2 className="animate-spin" size={16} /> : "Submit"}
             </button>
           </div>
 

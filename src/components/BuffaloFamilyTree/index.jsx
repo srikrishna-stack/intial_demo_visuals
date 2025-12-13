@@ -543,15 +543,7 @@ export default function BuffaloFamilyTree() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const toggleFullScreen = () => setIsFullScreen(!isFullScreen);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-blue-50 to-indigo-50">
-        <div className="animate-spin rounded-full h-20 w-20 border-b-2 border-blue-600 mb-6"></div>
-        <div className="text-2xl text-gray-700 font-semibold">Growing Buffalo Herd...</div>
-        <div className="text-base text-gray-500 mt-3">Simulating {units} unit{units > 1 ? 's' : ''} over {years} years</div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col overflow-hidden">
@@ -603,6 +595,7 @@ export default function BuffaloFamilyTree() {
           handleZoomOut={handleZoomOut}
           handleResetView={handleResetView}
           zoom={zoom}
+          loading={loading}
         />
       )}
 
