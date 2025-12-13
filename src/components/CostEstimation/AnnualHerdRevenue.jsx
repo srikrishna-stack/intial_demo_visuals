@@ -17,13 +17,13 @@ const AnnualHerdRevenue = ({
     <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden mb-16 mx-20">
 
       {/* Header Section */}
-      <div className="mt-6 flex justify-center">
-        <div className="p-4 max-w-lg w-full ">
+      <div className="mt-2 flex justify-center">
+        <div className="p-2 max-w-lg w-full ">
           <div className="flex flex-col items-center">
-            <h2 className="text-2xl font-bold text-slate-800 mb-1">
+            <h2 className="text-xl font-bold text-slate-800 mb-1">
               Annual Herd Revenue Analysis(with CPF)
             </h2>
-           
+
           </div>
         </div>
       </div>

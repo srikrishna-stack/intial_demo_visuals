@@ -46,6 +46,17 @@ const RevenueBreakEven = ({
 
   const revenueBreakEvenSummary = calculateRevenueBreakEvenSummary();
 
+  // Helper for date formatting
+  const getOrdinal = (n) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
+  const startDay = treeData.startDay || 1;
+  const startMonthName = monthNames[treeData.startMonth || 0];
+  const startDateString = `${getOrdinal(startDay)} ${startMonthName} ${treeData.startYear}`;
+
   // Function to calculate investment recovery status based on cumulative revenue
   const calculateInvestmentRecoveryStatus = (cumulativeRevenue, totalInvestment, isRevenueBreakEven) => {
     const recoveryPercentage = (cumulativeRevenue / totalInvestment) * 100;
@@ -74,19 +85,19 @@ const RevenueBreakEven = ({
       {/* Break-Even Timeline */}
       <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg">
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-6">
-          <h3 className="text-2xl font-bold text-gray-800 text-center m-0">
+          <h3 className="text-xl font-bold text-gray-800 text-center m-0">
             Revenue Break-Even Analysis (With CPF)
           </h3>
           {revenueBreakEvenSummary.withCPF.date && (
             <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-lg px-3 py-2 shadow-sm flex flex-col justify-center ml-20">
               <div className="text-[15px] font-bold text-emerald-800 uppercase mb-0.5">Break-Even WITH CPF</div>
               <div className="text-sm font-bold text-emerald-900 leading-none mb-1">
-                {revenueBreakEvenSummary.withCPF.date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                {startDateString} - {getOrdinal(revenueBreakEvenSummary.withCPF.date.getDate())} {monthNames[revenueBreakEvenSummary.withCPF.date.getMonth()]} {revenueBreakEvenSummary.withCPF.date.getFullYear()}
               </div>
-              <div className="text-[11px] font-semibold text-emerald-700 mb-0.5">
-                📈 Net: {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithCPF)}
-              </div>
-              <div className="text-[10px] text-emerald-600">
+              {/* <div className="text-sm font-semibold text-emerald-700 mb-0.5">
+                Net: {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithCPF)}
+              </div> */}
+              <div className="text-lg text-emerald-600">
                 {revenueBreakEvenSummary.withCPF.monthsToBreakEven} months <span className="opacity-75">({(revenueBreakEvenSummary.withCPF.monthsToBreakEven / 12).toFixed(1)} years)</span>
               </div>
             </div>

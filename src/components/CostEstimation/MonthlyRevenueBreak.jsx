@@ -148,6 +148,19 @@ const MonthlyRevenueBreak = ({
   const cumulativeCPFCost = calculateCumulativeCPFCost();
   const cumulativeNetRevenue = totalCumulativeUntilYear - cumulativeCPFCost;
 
+  // Helper to calculate dynamic date range string
+  const getOrdinal = (n) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
+  const startDay = treeData.startDay || 1;
+  const startMonthName = monthNames[treeData.startMonth || 0];
+  const startDateString = `${getOrdinal(startDay)} ${startMonthName} ${treeData.startYear}`;
+  const endDateString = `31st December ${selectedYear}`;
+  const dateRangeString = `${startDateString} - ${endDateString}`;
+
   // Download Excel functionad
   const downloadExcel = () => {
     let csvContent = "Monthly Revenue Breakdown - Unit " + selectedUnit + " - " + selectedYear + "\n\n";
@@ -282,12 +295,12 @@ const MonthlyRevenueBreak = ({
               {/* Small Summary Card */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-4 py-2 shadow-sm text-right">
                 <div className="text-xs font-medium text-slate-600">
-                  Total Revenue ({treeData.startYear}-{selectedYear})
+                  Total Revenue ({dateRangeString})
                 </div>
                 <div className="text-sm font-bold text-blue-700">
                   {formatCurrency(totalCumulativeUntilYear)}
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
+                <div className="text-sm text-slate-500 mt-0.5">
                   Net: <span className="font-semibold text-emerald-600">{formatCurrency(cumulativeNetRevenue)}</span>
                 </div>
               </div>

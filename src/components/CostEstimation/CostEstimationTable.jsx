@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Info } from 'lucide-react';
 import MonthlyRevenueBreak from './MonthlyRevenueBreak';
 import RevenueBreakEven from './RevenueBreakEven';
 import AssetMarketValue from './AssetMarketValue';
@@ -687,6 +688,9 @@ const CostEstimationTable = ({
       <div className="min-h-full bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="max-w-8xl mx-auto">
           <div className="h-5"></div>
+
+
+
           <div className='w-full flex items-center justify-center text-white mb-8 flex-wrap gap-2'>
             <button
               onClick={() => setActiveTab("Monthly Revenue Break")}
@@ -744,6 +748,8 @@ const CostEstimationTable = ({
               Break Even Timeline
             </button>
           </div>
+
+
 
           <div className='w-full'>
             {activeTab === "Monthly Revenue Break" && (
@@ -832,6 +838,24 @@ const CostEstimationTable = ({
                 yearRange={yearRange}
               />
             )}
+          </div>
+
+          {/* CPF Explanation Note - Sticky Footer */}
+          <div className="sticky bottom-0 z-40 mx-4 mt-8 mb-0 bg-blue-50/95 backdrop-blur-md border-l-4 border-blue-500 p-4 rounded-r shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ring-1 ring-blue-100">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <Info className="h-5 w-5 text-blue-500" aria-hidden="true" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-bold text-blue-800">Cattle Protection Fund (CPF): Income Guarantee & Asset Security</h3>
+                <div className="mt-1 text-sm text-blue-700">
+                  <p>
+                    Your income is guaranteed through the Cattle Protection Fund. This safety measure secures your animals,
+                    decreases revenue risk, and ensures growing assets. It is a vital step for long-term stability.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

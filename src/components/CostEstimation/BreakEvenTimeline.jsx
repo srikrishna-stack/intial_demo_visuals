@@ -1,4 +1,5 @@
 import React from 'react';
+import { Info } from 'lucide-react';
 
 const BreakEvenTimeline = ({
   treeData,
@@ -20,18 +21,27 @@ const BreakEvenTimeline = ({
 
   const monthsToBreakEvenWithCPF = calculateMonthsToBreakEven(breakEvenAnalysis.exactBreakEvenDateWithCPF);
 
+  // Helper for date formatting
+  const getOrdinal = (n) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
+  const lastYear = breakEvenAnalysis.breakEvenData.length > 0
+    ? breakEvenAnalysis.breakEvenData[breakEvenAnalysis.breakEvenData.length - 1].year
+    : (treeData.startYear + treeData.years - 1);
+
+  const formattedDateRange = `${getOrdinal(treeData.startDay || 1)} ${monthNames[treeData.startMonth || 0]} ${treeData.startYear} - 31st December ${lastYear}`;
+
   return (
     <div className=" rounded-3xl p-10 shadow-2xl border border-green-200 mb-16 mx-20">
       {/* Main Heading */}
-      <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+      <div className="text-center mb-2">
+        <h2 className="text-xl font-bold text-gray-800 mb-2">
           Break-Even Timeline Analysis
         </h2>
-        <div className="inline-flex items-center justify-center px-4 py-2 bg-emerald-50 rounded-full">
-          <span className="text-emerald-700 font-semibold">
-            With CPF
-          </span>
-        </div>
+
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -91,10 +101,10 @@ const BreakEvenTimeline = ({
                 <div className="bg-gray-700 rounded-lg p-3">
                   <div className="text-xs font-medium text-gray-300 mb-1"> In Just {monthsToBreakEvenWithCPF} Months</div>
                   <div className="text-sm font-bold">
-                     ({Math.floor(monthsToBreakEvenWithCPF / 12)} years and {monthsToBreakEvenWithCPF % 12} months)
+                    ({Math.floor(monthsToBreakEvenWithCPF / 12)} years and {monthsToBreakEvenWithCPF % 12} months)
                   </div>
                 </div>
-                
+
                 <div className="bg-gray-700 rounded-lg p-3">
                   <div className="text-xs font-medium text-gray-300 mb-1">Investment Cycle</div>
                   <div className="text-sm font-bold">
@@ -157,9 +167,19 @@ const BreakEvenTimeline = ({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-slate-600">Net Cumulative Revenue:</span>
-                  <span className="text-sm font-semibold text-emerald-700">
+                  <span className="text-sm font-bold text-emerald-700">
                     {formatCurrency(breakEvenAnalysis.finalCumulativeRevenueWithCPF)}
                   </span>
+                </div>
+
+                <div className="mt-3 bg-blue-50 border border-blue-100 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-blue-800 leading-relaxed">
+                      <strong>What is Net Cumulative Revenue?</strong><br />
+                      This is the total profit (Revenue minus CPF cost) accumulated over the entire period from <strong>{formattedDateRange.split(' - ')[0]}</strong> to <strong>{formattedDateRange.split(' - ')[1]}</strong>.
+                    </div>
+                  </div>
                 </div>
               </>
             )}
@@ -223,7 +243,7 @@ const BreakEvenTimeline = ({
       <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
         <div className='text-center mb-6'>
           <h3 className="text-xl font-bold text-slate-800">
-            Break-Even Timeline ({yearRange}) - With CPF
+            Break-Even Timeline ({formattedDateRange}) - With CPF
           </h3>
         </div>
         <div className="overflow-x-auto">

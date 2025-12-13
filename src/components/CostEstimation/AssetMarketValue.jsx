@@ -14,6 +14,21 @@ const AssetMarketValue = ({
   endYear,
   yearRange
 }) => {
+  const monthNames = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
+
+  // Helper for date formatting
+  const getOrdinal = (n) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
+  const startDay = treeData.startDay || 1;
+  const startMonthName = monthNames[treeData.startMonth || 0];
+  const startDateString = `${getOrdinal(startDay)} ${startMonthName} ${treeData.startYear}`;
+  const endDateString = `31st December ${endYear}`;
+
   const [selectedYear, setSelectedYear] = useState(treeData.startYear);
   const [breakdownYear, setBreakdownYear] = useState(treeData.startYear);
   const [selectedAssetData, setSelectedAssetData] = useState(null);
@@ -483,7 +498,7 @@ const AssetMarketValue = ({
                 return formatCurrency(initialValue);
               })()}
             </div>
-            <div className="text-lg font-semibold text-blue-700">Initial Asset Value ({treeData.startYear})</div>
+            <div className="text-lg font-semibold text-blue-700">Initial Asset Value ({startDateString})</div>
             <div className="text-sm text-gray-600 mt-2">
               {(() => {
                 const initialMothers = treeData.units * 2;
@@ -502,7 +517,7 @@ const AssetMarketValue = ({
             <div className="text-2xl font-bold mb-2">
               {formatCurrency(assetMarketValue[assetMarketValue.length - 1]?.totalAssetValue || 0)}
             </div>
-            <div className="text-lg font-semibold opacity-90">Final Asset Value ({endYear})</div>
+            <div className="text-lg font-semibold opacity-90">Final Asset Value ({endDateString})</div>
             <div className="text-sm opacity-80 mt-2">
               {(() => {
                 const finalAsset = assetMarketValue[assetMarketValue.length - 1];
