@@ -6,12 +6,12 @@ import CostEstimationTable from "../CostEstimation/CostEstimationTable";
 
 export default function BuffaloFamilyTree() {
   // Initialize with current date
-  const today = new Date();
+  // Initialize with default date: Jan 1, 2026
   const [units, setUnits] = useState(1);
   const [years, setYears] = useState(10);
-  const [startYear, setStartYear] = useState(today.getFullYear());
-  const [startMonth, setStartMonth] = useState(today.getMonth());
-  const [startDay, setStartDay] = useState(today.getDate());
+  const [startYear, setStartYear] = useState(2026);
+  const [startMonth, setStartMonth] = useState(0);
+  const [startDay, setStartDay] = useState(1);
   const [treeData, setTreeData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [zoom, setZoom] = useState(1);

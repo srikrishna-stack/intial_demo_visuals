@@ -4,6 +4,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { formatCurrency } from './CommonComponents';
 
+
 const HeaderControls = ({
   units,
   setUnits,
@@ -74,7 +75,7 @@ const HeaderControls = ({
                     setStartDay(date.getDate());
                   }
                 }}
-                minDate={new Date()}
+                minDate={new Date(2026, 0, 1)}
                 showMonthDropdown
                 showYearDropdown
                 dropdownMode="select"
