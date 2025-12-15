@@ -55,7 +55,6 @@ const HeaderControls = ({
               disabled
               className="w-24 border border-gray-300 p-1.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-100 cursor-not-allowed text-gray-500"
               value={units || 1}
-              onChange={(e) => handleNumberChange(e.target.value, setUnits)}
               placeholder="1"
             />
           </div>
@@ -97,8 +96,20 @@ const HeaderControls = ({
               max="10"
               className="w-24 border border-gray-300 p-1.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               value={years || ''}
-              onChange={(e) => handleNumberChange(e.target.value, setYears)}
-              placeholder="1-50"
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '') {
+                  setYears('');
+                } else {
+                  const num = parseInt(val, 10);
+                  if (!isNaN(num)) {
+                    if (num > 10) setYears(10);
+                    else if (num < 1) setYears(1);
+                    else setYears(num);
+                  }
+                }
+              }}
+              placeholder="1-10"
             />
           </div>
 

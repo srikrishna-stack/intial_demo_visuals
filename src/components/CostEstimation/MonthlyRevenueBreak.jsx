@@ -245,19 +245,9 @@ const MonthlyRevenueBreak = ({
               <div className="relative bg-white rounded-xl border border-slate-200 px-3 py-2 shadow-sm">
                 <div className="flex items-center gap-2">
                   <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">
-                    Select Unit
+                    1 Unit 
                   </label>
-                  <select
-                    value={selectedUnit}
-                    onChange={(e) => setSelectedUnit(parseInt(e.target.value))}
-                    className="bg-transparent font-medium text-slate-900 focus:outline-none cursor-pointer text-sm"
-                  >
-                    {Array.from({ length: treeData.units }, (_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        Unit {i + 1}
-                      </option>
-                    ))}
-                  </select>
+                  
                 </div>
               </div>
             </div>
