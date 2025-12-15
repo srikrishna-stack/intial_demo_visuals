@@ -245,9 +245,9 @@ const MonthlyRevenueBreak = ({
               <div className="relative bg-white rounded-xl border border-slate-200 px-3 py-2 shadow-sm">
                 <div className="flex items-center gap-2">
                   <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">
-                    1 Unit 
+                    1 Unit
                   </label>
-                  
+
                 </div>
               </div>
             </div>
@@ -274,9 +274,9 @@ const MonthlyRevenueBreak = ({
                 Unit {selectedUnit} • {unitBuffaloes.length} Buffalo{unitBuffaloes.length !== 1 ? 'es' : ''}
               </p>
               <div className="text-xs text-amber-600 mt-1">
-                B CPF: {selectedYear === 2026 ? 'Free (July-Dec 2026)' :
-                  selectedYear === 2027 ? 'Half year CPF (July-Dec 2027)' :
-                    selectedYear > 2027 ? 'Full CPF (₹13,000)' : 'No CPF'}
+                B CPF: {selectedYear === treeData.startYear ? `Free (July-Dec ${selectedYear})` :
+                  selectedYear === treeData.startYear + 1 ? `Half year CPF (July-Dec ${selectedYear})` :
+                    selectedYear > treeData.startYear + 1 ? 'Full CPF (₹13,000)' : 'No CPF'}
               </div>
             </div>
 
