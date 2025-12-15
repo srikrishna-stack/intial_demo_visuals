@@ -14,7 +14,7 @@ const AnnualHerdRevenue = ({
   const cpfToggle = "withCPF";
 
   return (
-    <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden mb-16 mx-20">
+    <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden mb-16 mx-4 lg:mx-20">
 
       {/* Header Section */}
       <div className="mt-2 flex justify-center">

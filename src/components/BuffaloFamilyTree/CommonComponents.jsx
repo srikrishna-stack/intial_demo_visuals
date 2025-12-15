@@ -161,8 +161,6 @@ export const TreeBranch = ({ parent, all, level = 0, getDisplayName, zoom = 1 })
   const kids = buildTree(parent, all);
   const [forceUpdate, setForceUpdate] = useState(0);
 
-  if (kids.length === 0) return null;
-
   // Force update arrows when zoom changes
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -170,6 +168,8 @@ export const TreeBranch = ({ parent, all, level = 0, getDisplayName, zoom = 1 })
     }, 50);
     return () => clearTimeout(timer);
   }, [zoom]);
+
+  if (kids.length === 0) return null;
 
   return (
     <div className="flex flex-col items-center mt-6">

@@ -684,7 +684,7 @@ const CostEstimationTable = ({
     "July", "August", "September", "October", "November", "December"];
 
   return (
-    <div className="h-full overflow-auto bg-white rounded-lg shadow-lg m-4">
+    <div className="bg-white rounded-lg shadow-lg m-4">
       <div className="min-h-full bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="max-w-8xl mx-auto">
           <div className="h-5"></div>

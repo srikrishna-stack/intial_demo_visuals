@@ -574,7 +574,7 @@ const AssetMarketValue = ({
   ).length;
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-3xl p-8 shadow-xl border border-gray-200 mb-16 mx-4 lg:mx-25">
+    <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-3xl p-8 shadow-xl border border-gray-200 mb-16 mx-4 lg:mx-20">
       <div className='flex justify-center items-center mb-6'>
         <div className="bg-white rounded-xl p-6 border border-gray-300 shadow-sm w-full max-w-3xl">
           <div className="flex flex-col lg:flex-row gap-6">

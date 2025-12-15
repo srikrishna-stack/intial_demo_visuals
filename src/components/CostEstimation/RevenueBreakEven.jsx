@@ -81,7 +81,7 @@ const RevenueBreakEven = ({
   };
 
   return (
-    <div className=" p-5 rounded-2xl border border-purple-200 mb-16 xl:mx-20">
+    <div className="p-5 rounded-2xl border border-purple-200 mb-16 mx-4 lg:mx-20">
       {/* Break-Even Timeline */}
       <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg">
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-6">
@@ -180,7 +180,7 @@ const RevenueBreakEven = ({
         </div>
       </div>
       {/* Initial Investment & Break-Even Analysis - Professional Layout */}
-      <div className="grid grid-cols-3 gap-4 mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
         {/* Mother Buffaloes Cost */}
         <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-5 border border-blue-100 shadow-sm text-center">
           <div className="text-2xl font-bold text-blue-700 mb-2">
