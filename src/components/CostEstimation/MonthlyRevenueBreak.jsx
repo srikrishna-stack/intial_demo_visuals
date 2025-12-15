@@ -253,15 +253,15 @@ const MonthlyRevenueBreak = ({
             </div>
 
             {/* Center: Title & Year Selector */}
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2">
-                <h3 className="text-2xl font-bold text-slate-900">
+            <div className="text-center w-full lg:w-auto order-last lg:order-none">
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
+                <h3 className="text-xl md:text-2xl font-bold text-slate-900 whitespace-nowrap">
                   Monthly Revenue Breakdown -
                 </h3>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="text-2xl font-bold text-slate-900 bg-transparent border-b-2 border-slate-300 focus:border-blue-500 focus:outline-none cursor-pointer py-1"
+                  className="text-xl md:text-2xl font-bold text-slate-900 bg-transparent border-b-2 border-slate-300 focus:border-blue-500 focus:outline-none cursor-pointer py-1"
                 >
                   {Array.from({ length: 10 }, (_, i) => (
                     <option key={i} value={treeData.startYear + i}>
@@ -270,13 +270,15 @@ const MonthlyRevenueBreak = ({
                   ))}
                 </select>
               </div>
-              <p className="text-slate-600 font-medium text-sm">
-                Unit {selectedUnit} • {unitBuffaloes.length} Buffalo{unitBuffaloes.length !== 1 ? 'es' : ''}
-              </p>
-              <div className="text-xs text-amber-600 mt-1">
-                B CPF: {selectedYear === treeData.startYear ? `Free (July-Dec ${selectedYear})` :
-                  selectedYear === treeData.startYear + 1 ? `Half year CPF (July-Dec ${selectedYear})` :
-                    selectedYear > treeData.startYear + 1 ? 'Full CPF (₹13,000)' : 'No CPF'}
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-slate-600 font-medium text-sm">
+                  Unit {selectedUnit} • {unitBuffaloes.length} Buffalo{unitBuffaloes.length !== 1 ? 'es' : ''}
+                </p>
+                <div className="text-xs text-amber-600 font-medium bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                  B CPF: {selectedYear === treeData.startYear ? `Free (July-Dec ${selectedYear})` :
+                    selectedYear === treeData.startYear + 1 ? `Half year CPF (July-Dec ${selectedYear})` :
+                      selectedYear > treeData.startYear + 1 ? 'Full CPF (₹13,000)' : 'No CPF'}
+                </div>
               </div>
             </div>
 
