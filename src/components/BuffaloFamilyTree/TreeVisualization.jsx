@@ -45,12 +45,7 @@ const TreeVisualization = ({
               <p className="text-base text-gray-600">Navigate through the interactive family tree</p>
             </div>
           </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 py-6 rounded-2xl font-bold text-xl hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-2xl inline-flex items-center gap-3"
-          >
-            Start
-          </button>
+
         </div>
       </div>
     );
@@ -72,7 +67,7 @@ const TreeVisualization = ({
   const stats = {
     count: filteredBuffaloes.length,
     revenue: filteredBuffaloes.reduce((sum, b) => sum + (b.lifetimeRevenue || 0), 0),
-    netRevenue: activeFounderId === "all" && treeData.summaryStats ? treeData.summaryStats.totalNetRevenue : filteredBuffaloes.reduce((sum, b) => sum + (b.lifetimeRevenue || 0), 0),
+    netRevenue: activeFounderId === "all" && treeData.summaryStats ? treeData.summaryStats.totalNetRevenue : filteredBuffaloes.reduce((sum, b) => sum + (b.lifetimeNet || 0), 0),
     assetValue: filteredBuffaloes.reduce((sum, b) => sum + (b.currentAssetValue || 0), 0),
     producing: filteredBuffaloes.filter(b => b.ageInMonths >= 36).length,
     nonProducing: filteredBuffaloes.filter(b => b.ageInMonths < 36).length

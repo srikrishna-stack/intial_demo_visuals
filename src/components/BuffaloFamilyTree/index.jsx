@@ -332,6 +332,8 @@ export default function BuffaloFamilyTree() {
       const { totalRevenue, totalNetRevenue } = calculateTotalFinancials();
 
       // --- Calculate Per-Buffalo Stats for Tooltip ---
+      const CPF_PER_MONTH = 13000 / 12; // Define CPF constant
+
       herd.forEach(buffalo => {
         // 1. Age & Asset Value
         const ageInMonths = calculateAgeInMonths(buffalo, endYear, 11);
@@ -347,36 +349,69 @@ export default function BuffaloFamilyTree() {
           buffalo.grandParentId = null;
         }
 
-        // 3. Lifetime Revenue
+        // 3. Lifetime Revenue & CPF & Net
         let lifetimeRevenue = 0;
+        let lifetimeCPF = 0;
         const calcStartYear = Math.max(startYear, buffalo.birthYear);
 
         for (let y = calcStartYear; y <= endYear; y++) {
-          // If born this year, start from acquisition/birth month
-          // For simplicity in this total stats view, we can scan all 12 months
-          // because calculateMonthlyRevenueForBuffalo handles the "before acquisition" logic
-          // by checking (currentYear - startYear)*12 + ...
-          // Actually, we must be careful. helper function `calculateMonthlyRevenueForBuffalo`
-          // uses `monthsSinceAcquisition`.
-
           for (let m = 0; m < 12; m++) {
-            // IMPORTANT: Match CostEstimationTable logic
+            // --- Revenue Logic ---
+            let isRevenueApplicable = true;
             // For offspring (Gen > 0), revenue only starts after 36 months
             if (buffalo.generation > 0) {
               const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
               const ageAtMonth = ((y - buffalo.birthYear) * 12) + (m - birthMonth);
-              if (ageAtMonth < 36) continue;
+              if (ageAtMonth < 36) isRevenueApplicable = false;
             }
 
-            lifetimeRevenue += calculateMonthlyRevenueForBuffalo(
-              buffalo.id,
-              buffalo.acquisitionMonth,
-              y,
-              m
-            );
+            if (isRevenueApplicable) {
+              const revenue = calculateMonthlyRevenueForBuffalo(
+                buffalo.id,
+                buffalo.acquisitionMonth,
+                y,
+                m
+              );
+              if (revenue > 0) {
+                lifetimeRevenue += revenue;
+              }
+            }
+
+            // --- CPF Logic (Mirrors calculateTotalFinancials) ---
+            let isCpfApplicable = false;
+            if (buffalo.generation === 0) {
+              const isFirstInUnit = (buffalo.id.charCodeAt(0) - 65) % 2 === 0;
+              if (isFirstInUnit) {
+                isCpfApplicable = true;
+              } else {
+                // Type B: Free Period Check
+                const isPresentInSimulation = y > startYear || (y === startYear && m >= buffalo.acquisitionMonth);
+
+                if (isPresentInSimulation) {
+                  // Free period: July of startYear (month 6) to June of startYear+1 (month 5)
+                  const isFreePeriod = (y === startYear && m >= 6) || (y === startYear + 1 && m <= 5);
+                  if (!isFreePeriod) {
+                    isCpfApplicable = true;
+                  }
+                }
+              }
+            } else {
+              // Offspring: Pay CPF after 36 months
+              const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
+              const ageAtMonth = ((y - buffalo.birthYear) * 12) + (m - birthMonth);
+              if (ageAtMonth >= 36) {
+                isCpfApplicable = true;
+              }
+            }
+
+            if (isCpfApplicable) {
+              lifetimeCPF += CPF_PER_MONTH;
+            }
           }
         }
         buffalo.lifetimeRevenue = lifetimeRevenue;
+        buffalo.lifetimeCPF = lifetimeCPF;
+        buffalo.lifetimeNet = lifetimeRevenue - lifetimeCPF;
       });
 
       setTreeData({

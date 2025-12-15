@@ -111,6 +111,10 @@ export const BuffaloNode = ({ data, founder, displayName, elementId, parentDispl
               <span className="font-medium text-green-400">{formatCurrency(data.lifetimeRevenue)}</span>
             </div>
             <div className="flex justify-between">
+              <span className="text-gray-400">Cumulative Net:</span>
+              <span className="font-medium text-emerald-400">{formatCurrency(data.lifetimeNet)}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-gray-400">Asset Value:</span>
               <span className="font-medium text-blue-400">{formatCurrency(data.currentAssetValue)}</span>
             </div>
