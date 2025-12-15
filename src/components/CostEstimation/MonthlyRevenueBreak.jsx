@@ -239,21 +239,24 @@ const MonthlyRevenueBreak = ({
           {/* Header Controls Row */}
           <div className="flex flex-col xl:flex-row justify-between items-center gap-4 mb-6">
 
-            {/* Left: Unit Selector */}
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-400 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
-              <div className="relative bg-white rounded-xl border border-slate-200 px-3 py-2 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">
-                    1 Unit
-                  </label>
-
+            {/* Left: Summary & Download */}
+            <div className="flex flex-col items-start gap-2 w-full lg:w-48">
+              {/* Small Summary Card */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-3 py-1.5 shadow-sm text-left w-full">
+                <div className="text-[10px] font-medium text-slate-600 uppercase tracking-wider">
+                  Total Revenue ({treeData.startYear}-{selectedYear})
+                </div>
+                <div className="text-sm font-bold text-blue-700">
+                  {formatCurrency(totalCumulativeUntilYear)}
+                </div>
+                <div className="text-xs text-slate-500">
+                  Net: <span className="font-semibold text-emerald-600">{formatCurrency(cumulativeNetRevenue)}</span>
                 </div>
               </div>
             </div>
 
             {/* Center: Title & Year Selector */}
-            <div className="text-center w-full lg:w-auto order-last lg:order-none">
+            <div className="text-center w-full lg:w-auto">
               <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
                 <h3 className="text-xl md:text-2xl font-bold text-slate-900 whitespace-nowrap">
                   Monthly Revenue Breakdown -
@@ -282,31 +285,17 @@ const MonthlyRevenueBreak = ({
               </div>
             </div>
 
-            {/* Right: Summary & Download */}
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              {/* Small Summary Card */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-4 py-2 shadow-sm text-right">
-                <div className="text-xs font-medium text-slate-600">
-                  Total Revenue ({dateRangeString})
-                </div>
-                <div className="text-sm font-bold text-blue-700">
-                  {formatCurrency(totalCumulativeUntilYear)}
-                </div>
-                <div className="text-sm text-slate-500 mt-0.5">
-                  Net: <span className="font-semibold text-emerald-600">{formatCurrency(cumulativeNetRevenue)}</span>
-                </div>
-              </div>
-
-              {/* Download Button */}
+            {/* Right: Download Button */}
+            <div className="flex flex-col items-end gap-2 w-full lg:w-48">
               <button
                 onClick={downloadExcel}
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white p-2 rounded-lg shadow hover:shadow-md hover:scale-105 transition-all text-sm flex items-center gap-2"
+                className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-1.5 px-3 rounded-lg shadow hover:shadow-md hover:scale-105 transition-all text-xs flex items-center justify-center gap-2 w-full"
                 title="Download Excel"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <span className="hidden sm:inline font-semibold">Download Excel</span>
+                <span className="font-semibold">Download Excel</span>
               </button>
             </div>
 
