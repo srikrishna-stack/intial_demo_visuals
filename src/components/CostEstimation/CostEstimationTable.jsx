@@ -61,7 +61,9 @@ const CostEstimationTable = ({
         originalId: buffalo.id,
         generation: buffalo.generation,
         unit: buffalo.unit,
+        unit: buffalo.unit,
         acquisitionMonth: buffalo.acquisitionMonth,
+        absoluteAcquisitionMonth: buffalo.absoluteAcquisitionMonth, // Pass this down
         birthYear: buffalo.birthYear,
         birthMonth: birthMonth,
         parentId: buffalo.parentId,
@@ -93,6 +95,32 @@ const CostEstimationTable = ({
     return buffaloDetails;
   };
 
+  const calculateMonthlyRevenueForBuffalo = (acquisitionMonth, currentMonth, currentYear, startYear, absoluteAcquisitionMonth) => {
+    let monthsSinceAcquisition;
+
+    if (absoluteAcquisitionMonth !== undefined) {
+      const currentAbsolute = currentYear * 12 + currentMonth;
+      monthsSinceAcquisition = currentAbsolute - absoluteAcquisitionMonth;
+    } else {
+      monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
+    }
+
+    if (monthsSinceAcquisition < 2) {
+      return 0;
+    }
+
+    const productionMonth = monthsSinceAcquisition - 2;
+    const cycleMonth = productionMonth % 12;
+
+    if (cycleMonth < 5) {
+      return 9000;
+    } else if (cycleMonth < 8) {
+      return 6000;
+    } else {
+      return 0;
+    }
+  };
+
   const calculateYearlyCPFCost = () => {
     const buffaloDetails = getBuffaloDetails();
     const cpfCostByYear = {};
@@ -110,6 +138,15 @@ const CostEstimationTable = ({
           let monthsWithCPF = 0;
 
           for (let month = 0; month < 12; month++) {
+            // Cutoff Logic
+            const currentAbsoluteMonth = year * 12 + month;
+            const absoluteStartMonth = treeData.startYear * 12 + treeData.startMonth;
+            const absoluteEndMonth = absoluteStartMonth + (treeData.years * 12) - 1;
+
+            if (currentAbsoluteMonth < absoluteStartMonth || currentAbsoluteMonth > absoluteEndMonth) {
+              continue;
+            }
+
             let isCpfApplicable = false;
 
             if (buffalo.generation === 0) {
@@ -125,11 +162,20 @@ const CostEstimationTable = ({
                 // Fix: Check presence logic to match index.jsx fix (Simulation start vs Birth)
                 // For Gen 0, birthYear is older, so we must check relative to Start Year for acquisition
                 const startYear = treeData.startYear;
-                const isPresentInSimulation = year > startYear || (year === startYear && month >= buffalo.acquisitionMonth);
+                // Check presence using Absolute Acquisition Month
+                const currentAbsolute = year * 12 + month;
+                const isPresentInSimulation = buffalo.absoluteAcquisitionMonth !== undefined
+                  ? currentAbsolute >= buffalo.absoluteAcquisitionMonth
+                  : (year > startYear || (year === startYear && month >= buffalo.acquisitionMonth));
 
                 if (isPresentInSimulation) {
-                  // Free Period: July of Start Year to June of Start Year + 1
-                  const isFreePeriod = (year === startYear && month >= 6) || (year === startYear + 1 && month <= 5);
+                  // Free Period: 12 months starting 6 months after simulation start
+                  const absoluteStart = treeData.startYear * 12 + treeData.startMonth;
+                  const currentAbsolute = year * 12 + month;
+                  const monthsSinceStart = currentAbsolute - absoluteStart;
+
+                  // B is acquired at month 6 relative to start. Free for 12 months (6-17).
+                  const isFreePeriod = monthsSinceStart >= 6 && monthsSinceStart < 18;
 
                   if (!isFreePeriod) {
                     isCpfApplicable = true;
@@ -270,24 +316,7 @@ const CostEstimationTable = ({
 
   const initialInvestment = calculateInitialInvestment();
 
-  const calculateMonthlyRevenueForBuffalo = (acquisitionMonth, currentMonth, currentYear, startYear) => {
-    const monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
 
-    if (monthsSinceAcquisition < 2) {
-      return 0;
-    }
-
-    const productionMonth = monthsSinceAcquisition - 2;
-    const cycleMonth = productionMonth % 12;
-
-    if (cycleMonth < 5) {
-      return 9000;
-    } else if (cycleMonth < 8) {
-      return 6000;
-    } else {
-      return 0;
-    }
-  };
 
   const calculateDetailedMonthlyRevenue = () => {
     const buffaloDetails = getBuffaloDetails();
@@ -337,6 +366,15 @@ const CostEstimationTable = ({
 
         if (shouldCalculateRevenue) {
           for (let month = 0; month < 12; month++) {
+            // Cutoff Logic
+            const currentAbsoluteMonth = year * 12 + month;
+            const absoluteStartMonth = treeData.startYear * 12 + treeData.startMonth;
+            const absoluteEndMonth = absoluteStartMonth + (treeData.years * 12) - 1;
+
+            if (currentAbsoluteMonth < absoluteStartMonth || currentAbsoluteMonth > absoluteEndMonth) {
+              continue;
+            }
+
             // Precise age check for children
             if (buffalo.generation > 0) {
               const ageAtMonth = calculateAgeInMonths(buffalo, year, month);
@@ -347,7 +385,8 @@ const CostEstimationTable = ({
               buffalo.acquisitionMonth,
               month,
               year,
-              treeData.startYear
+              treeData.startYear,
+              buffalo.absoluteAcquisitionMonth
             );
 
             if (revenue > 0) {
@@ -517,10 +556,19 @@ const CostEstimationTable = ({
 
   const calculateAssetMarketValue = () => {
     const assetValues = [];
-    const endYear = treeData.startYear + 9;
+    // Correctly calculate end year including partial years (same as index.jsx)
+    const totalMonthsDuration = treeData.years * 12;
+    const endYear = treeData.startYear + Math.floor((treeData.startMonth + totalMonthsDuration - 1) / 12);
+
+    const absoluteStartMonth = treeData.startYear * 12 + treeData.startMonth;
+    const absoluteEndMonth = absoluteStartMonth + (treeData.years * 12) - 1;
+    const endMonthOfSimulation = absoluteEndMonth % 12;
 
     for (let year = treeData.startYear; year <= endYear; year++) {
       let totalAssetValue = 0;
+
+      // Determine target month: December (11) for full years, or endMonthOfSimulation for the final year
+      const targetMonth = (year === endYear) ? endMonthOfSimulation : 11;
 
       const ageCategories = {
         '0-6 months (Calves)': { count: 0, value: 0 },
@@ -536,8 +584,9 @@ const CostEstimationTable = ({
       };
 
       Object.values(buffaloDetails).forEach(buffalo => {
-        if (year >= buffalo.birthYear) {
-          const ageInMonths = calculateAgeInMonths(buffalo, year, 11);
+        // Only count buffaloes born before or in the last year/month
+        if (buffalo.birthYear < year || (buffalo.birthYear === year && (buffalo.birthMonth || 0) <= targetMonth)) {
+          const ageInMonths = calculateAgeInMonths(buffalo, year, targetMonth);
           const value = getBuffaloValueByAge(ageInMonths);
           totalAssetValue += value;
 
@@ -796,21 +845,23 @@ const CostEstimationTable = ({
             )}
 
             {activeTab === "Asset Market Value" && (
-              <>
-                <AssetMarketValue
-                  treeData={treeData}
-                  buffaloDetails={buffaloDetails}
-                  calculateAgeInMonths={calculateAgeInMonths}
-                  getBuffaloValueByAge={getBuffaloValueByAge}
-                  getBuffaloValueDescription={getBuffaloValueDescription}
-                  calculateDetailedAssetValue={calculateDetailedAssetValue}
-                  assetMarketValue={assetMarketValue}
-                  formatCurrency={formatCurrency}
-                  startYear={startYear}
-                  endYear={endYear}
-                  yearRange={yearRange}
-                />
-              </>
+              <AssetMarketValue
+                treeData={treeData}
+                buffaloDetails={buffaloDetails}
+                calculateAgeInMonths={calculateAgeInMonths}
+                getBuffaloValueByAge={getBuffaloValueByAge}
+                getBuffaloValueDescription={getBuffaloValueDescription}
+                calculateDetailedAssetValue={calculateDetailedAssetValue}
+                assetMarketValue={assetMarketValue}
+                formatCurrency={formatCurrency}
+                startYear={startYear}
+                endYear={treeData.startYear + Math.floor((treeData.startMonth + (treeData.years * 12) - 1) / 12)}
+                endMonth={(treeData.startYear * 12 + treeData.startMonth + (treeData.years * 12) - 1) % 12}
+                yearRange={yearRange}
+                yearlyData={yearlyData}
+                monthlyRevenue={monthlyRevenue}
+                yearlyCPFCost={yearlyCPFCost}
+              />
             )}
 
             {activeTab === "Herd Performance" && (

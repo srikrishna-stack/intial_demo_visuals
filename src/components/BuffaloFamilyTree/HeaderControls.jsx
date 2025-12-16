@@ -76,8 +76,8 @@ const HeaderControls = ({
                     }
                   }}
                   minDate={new Date(2026, 0, 1)}
-                  showYearPicker
-                  dateFormat="yyyy"
+                  dateFormat="MM/yyyy"
+                  showMonthYearPicker
                   className="w-28 lg:w-40 border border-gray-300 p-2 pl-9 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm cursor-pointer shadow-sm"
                   placeholderText="Select date"
                   onKeyDown={(e) => e.preventDefault()}

@@ -34,6 +34,15 @@ const MonthlyRevenueBreak = ({
 
   // Helper to check precise CPF applicability
   const isCpfApplicableForMonth = (buffalo, year, month) => {
+    // Global Cutoff Check
+    const absoluteStartMonth = treeData.startYear * 12 + treeData.startMonth;
+    const absoluteEndMonth = absoluteStartMonth + (treeData.years * 12) - 1;
+    const currentAbsoluteMonth = year * 12 + month;
+
+    if (currentAbsoluteMonth < absoluteStartMonth || currentAbsoluteMonth > absoluteEndMonth) {
+      return false;
+    }
+
     if (buffalo.id === 'A') {
       return true;
     } else if (buffalo.id === 'B') {
@@ -42,17 +51,28 @@ const MonthlyRevenueBreak = ({
       // B is acquired in Month 6 of startYear.
       let isPresent = false;
       if (buffalo.generation === 0) {
-        const startYear = treeData.startYear;
-        isPresent = year > startYear || (year === startYear && month >= buffalo.acquisitionMonth);
+        // Use Absolute Month Check if available
+        if (buffalo.absoluteAcquisitionMonth !== undefined) {
+          const currentAbsolute = year * 12 + month;
+          isPresent = currentAbsolute >= buffalo.absoluteAcquisitionMonth;
+        } else {
+          // Fallback
+          const startYear = treeData.startYear;
+          isPresent = year > startYear || (year === startYear && month >= buffalo.acquisitionMonth);
+        }
       } else {
         isPresent = year > buffalo.birthYear || (year === buffalo.birthYear && month >= (buffalo.birthMonth || 0));
       }
 
       if (isPresent) {
         const startYear = treeData.startYear;
-        // Free Period: July of Start Year to June of Start Year + 1
-        // Free Indices: (StartYear, 6..11) and (StartYear+1, 0..5)
-        const isFreePeriod = (year === startYear && month >= 6) || (year === startYear + 1 && month <= 5);
+        // Free Period: 12 months starting 6 months after simulation start
+        const absoluteStart = treeData.startYear * 12 + treeData.startMonth;
+        const currentAbsolute = year * 12 + month;
+        const monthsSinceStart = currentAbsolute - absoluteStart;
+
+        // B is acquired at month 6 relative to start. Free for 12 months (6-17).
+        const isFreePeriod = monthsSinceStart >= 6 && monthsSinceStart < 18;
         if (!isFreePeriod) {
           return true;
         }
@@ -85,6 +105,11 @@ const MonthlyRevenueBreak = ({
 
       for (let month = 0; month < 12; month++) {
         if (isCpfApplicableForMonth(buffalo, selectedYear, month)) {
+          // Check if revenue > 0 for this buffalo/month
+          // We can access monthlyRevenue[selectedYear]?.[month]?.buffaloes[buffalo.id]
+          // But monthlyRevenue prop is passed in.
+          const revenue = monthlyRevenue[selectedYear]?.[month]?.buffaloes[buffalo.id] || 0;
+
           monthlyCosts[month] += CPF_PER_MONTH;
           monthsWithCPF++;
         }
@@ -136,6 +161,8 @@ const MonthlyRevenueBreak = ({
       allUnitBuffaloes.forEach(buffalo => {
         for (let month = 0; month < 12; month++) {
           if (isCpfApplicableForMonth(buffalo, year, month)) {
+            // Check revenue presence
+            const revenue = monthlyRevenue[year]?.[month]?.buffaloes[buffalo.id] || 0;
             totalCPF += CPF_PER_MONTH;
           }
         }
@@ -244,13 +271,13 @@ const MonthlyRevenueBreak = ({
               {/* Small Summary Card */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-3 py-1.5 shadow-sm text-left w-full">
                 <div className="text-[10px] font-medium text-slate-600 uppercase tracking-wider">
-                  Total Revenue ({treeData.startYear}-{selectedYear})
+                  Net Revenue ({treeData.startYear}-{selectedYear})
                 </div>
-                <div className="text-sm font-bold text-blue-700">
-                  {formatCurrency(totalCumulativeUntilYear)}
+                <div className="text-sm font-bold text-emerald-700">
+                  {formatCurrency(cumulativeNetRevenue)}
                 </div>
                 <div className="text-xs text-slate-500">
-                  Net: <span className="font-semibold text-emerald-600">{formatCurrency(cumulativeNetRevenue)}</span>
+                  Gross: <span className="font-semibold text-blue-600">{formatCurrency(totalCumulativeUntilYear)}</span>
                 </div>
               </div>
             </div>
@@ -266,9 +293,9 @@ const MonthlyRevenueBreak = ({
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                   className="text-xl md:text-2xl font-bold text-slate-900 bg-transparent border-b-2 border-slate-300 focus:border-blue-500 focus:outline-none cursor-pointer py-1"
                 >
-                  {Array.from({ length: 10 }, (_, i) => (
-                    <option key={i} value={treeData.startYear + i}>
-                      {treeData.startYear + i}
+                  {treeData.revenueData && treeData.revenueData.yearlyData && treeData.revenueData.yearlyData.map((data) => (
+                    <option key={data.year} value={data.year}>
+                      {data.year}
                     </option>
                   ))}
                 </select>
@@ -278,8 +305,8 @@ const MonthlyRevenueBreak = ({
                   Unit {selectedUnit} • {unitBuffaloes.length} Buffalo{unitBuffaloes.length !== 1 ? 'es' : ''}
                 </p>
                 <div className="text-xs text-amber-600 font-medium bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
-                  B CPF: {selectedYear === treeData.startYear ? `Free (July-Dec ${selectedYear})` :
-                    selectedYear === treeData.startYear + 1 ? `Half year CPF (July-Dec ${selectedYear})` :
+                  B CPF: {selectedYear === treeData.startYear ? `Free (1st Year)` :
+                    selectedYear === treeData.startYear + 1 ? `Half year CPF (1st Year End)` :
                       selectedYear > treeData.startYear + 1 ? 'Full CPF (₹13,000)' : 'No CPF'}
                 </div>
               </div>
@@ -553,9 +580,9 @@ const MonthlyRevenueBreak = ({
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className="text-lg font-bold text-amber-900 bg-transparent border-b-2 border-amber-400 focus:border-amber-600 focus:outline-none cursor-pointer"
             >
-              {Array.from({ length: 10 }, (_, i) => (
-                <option key={i} value={treeData.startYear + i}>
-                  {treeData.startYear + i}
+              {treeData.revenueData && treeData.revenueData.yearlyData && treeData.revenueData.yearlyData.map((data) => (
+                <option key={data.year} value={data.year}>
+                  {data.year}
                 </option>
               ))}
             </select>
@@ -570,7 +597,7 @@ const MonthlyRevenueBreak = ({
       )}
       {/* Dynamic Calculation Note */}
       <div className="mt-8 text-center text-sm text-slate-500">
-        Note: B gets one year free CPF from import date (July {treeData.startYear} to June {treeData.startYear + 1}).
+        Note: B gets one year free CPF from import date (1st year of presence).
         CPF calculation: ₹13,000 per buffalo per year (calculated monthly).
       </div>
 

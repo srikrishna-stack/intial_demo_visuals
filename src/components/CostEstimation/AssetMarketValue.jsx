@@ -12,7 +12,11 @@ const AssetMarketValue = ({
   isAssetMarketValue = true,
   startYear,
   endYear,
-  yearRange
+  endMonth,
+  yearRange,
+  yearlyData,
+  monthlyRevenue,
+  yearlyCPFCost
 }) => {
   const monthNames = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
@@ -84,8 +88,12 @@ const AssetMarketValue = ({
     let totalCount = 0;
 
     Object.values(buffaloDetails).forEach(buffalo => {
-      if (year >= buffalo.birthYear) {
-        const ageInMonths = calculateAgeInMonths(buffalo, year, 11);
+      // Only count buffaloes born before or in the last year/month
+      // Determine target month: December (11) for full years, or endMonth for the final year
+      const targetMonth = (year === endYear && endMonth !== undefined) ? endMonth : 11;
+
+      if (buffalo.birthYear < year || (buffalo.birthYear === year && (buffalo.birthMonth || 0) <= targetMonth)) {
+        const ageInMonths = calculateAgeInMonths(buffalo, year, targetMonth);
         const value = getBuffaloValueByAge(ageInMonths);
 
         if (ageInMonths >= 60) {
@@ -127,6 +135,8 @@ const AssetMarketValue = ({
 
     return { ageGroups, totalValue, totalCount };
   };
+
+
 
   // Helper function to get category count from asset data
   const getCategoryCount = (categoryKey, dataSource = selectedAssetData) => {
@@ -536,6 +546,131 @@ const AssetMarketValue = ({
           </div>
         </div>
 
+        {/* Caring Cost & Net Value Table */}
+        <div className="bg-white rounded-2xl p-6 border border-gray-300 shadow-sm mb-8 mx-4 lg:mx-20">
+          <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 mb-6">
+            <div className="flex items-center gap-3 justify-self-start w-full md:w-auto">
+              <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">Select Year:</label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="py-1 px-3 border border-gray-300 rounded-lg text-sm bg-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                {Array.from({ length: (endYear && endYear >= treeData.startYear) ? (endYear - treeData.startYear + 1) : 10 }, (_, i) => (
+                  <option key={i} value={treeData.startYear + i}>
+                    {treeData.startYear + i} (Year {i + 1})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-800 text-center justify-self-center md:whitespace-nowrap">
+              Caring Cost & Net Value Analysis
+            </h3>
+
+            <div className="justify-self-end w-full md:w-auto"></div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-teal-50 to-teal-100">
+                  <th className="px-4 py-4 text-left font-semibold text-gray-700 border-b text-sm">Age Group</th>
+                  <th className="px-4 py-4 text-left font-semibold text-gray-700 border-b text-sm">Yearly Cost</th>
+                  <th className="px-4 py-4 text-left font-semibold text-gray-700 border-b text-sm">Affected Buffaloes</th>
+                  <th className="px-4 py-4 text-left font-semibold text-gray-700 border-b text-sm">Annual Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const costBrackets = [
+                    { label: "0-12 months", start: 0, end: 12, cost: 0 },
+                    { label: "13-18 months", start: 13, end: 18, cost: 1000 },
+                    { label: "19-24 months", start: 19, end: 24, cost: 1400 },
+                    { label: "25-30 months", start: 25, end: 30, cost: 1800 },
+                    { label: "31-36 months", start: 31, end: 36, cost: 2500 },
+                    { label: "> 36 months", start: 37, end: 999, cost: 0 }
+                  ];
+
+                  const bracketStats = costBrackets.map(b => ({ ...b, count: new Set(), totalCost: 0 }));
+                  let totalCaringCost = 0;
+
+                  Object.values(buffaloDetails).forEach(buffalo => {
+                    const targetMonthLimit = (selectedYear === endYear && endMonth !== undefined) ? endMonth : 11;
+
+                    // Check if buffalo exists in this year
+                    // It must be born on or before the target month limit of this year
+                    if (buffalo.birthYear < selectedYear || (buffalo.birthYear === selectedYear && (buffalo.birthMonth || 0) <= targetMonthLimit)) {
+
+                      // SNAPSHOT LOGIC: Use Age at the End of the Year (or simulation end)
+                      // This allows "Total Count" to match the actual number of buffaloes (e.g., 6)
+                      const ageInMonths = calculateAgeInMonths(buffalo, selectedYear, targetMonthLimit);
+
+                      // Find bracket
+                      const bracketIndex = bracketStats.findIndex(b => ageInMonths >= b.start && ageInMonths <= b.end);
+                      if (bracketIndex !== -1) {
+                        bracketStats[bracketIndex].count.add(buffalo.id);
+                      }
+                    }
+                  });
+
+                  // Calculate costs based on counts (Yearly Cost * Count)
+                  // This assumes the Yearly Cost applies if they end the year in that bracket
+                  bracketStats.forEach(bracket => {
+                    bracket.totalCost = bracket.cost * bracket.count.size;
+                    totalCaringCost += bracket.totalCost;
+                  });
+
+                  // Calculate Annual Revenue from Monthly Revenue Table data
+                  let yearlyRevenue = 0;
+                  if (monthlyRevenue && monthlyRevenue[selectedYear]) {
+                    // Sum up all months 'total' for the selected year
+                    yearlyRevenue = Object.values(monthlyRevenue[selectedYear]).reduce((sum, m) => sum + (m.total || 0), 0);
+                  } else {
+                    // Fallback using yearlyData if monthlyRevenue isn't available
+                    yearlyRevenue = yearlyData ? (yearlyData.find(d => d.year === selectedYear)?.revenue || 0) : 0;
+                  }
+
+                  // Deduct CPF Cost to match "Net Annual Revenue" expectations from Monthly Revenue Break
+                  const cpfDeduction = yearlyCPFCost ? (yearlyCPFCost[selectedYear] || 0) : 0;
+                  yearlyRevenue = yearlyRevenue - cpfDeduction;
+
+                  const netValue = yearlyRevenue - totalCaringCost;
+
+                  return (
+                    <>
+                      {bracketStats.map((bracket, index) => (
+                        <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-100">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-800">{bracket.label}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(bracket.cost)}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{bracket.count.size}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-red-600">{formatCurrency(bracket.totalCost)}</td>
+                        </tr>
+                      ))}
+
+                      {/* Footer Rows */}
+                      <tr className="bg-gray-50 border-t-2 border-gray-200">
+                        <td colSpan="3" className="px-4 py-3 text-right font-bold text-gray-700">Total Caring Cost:</td>
+                        <td className="px-4 py-3 text-sm font-bold text-red-700">{formatCurrency(totalCaringCost)}</td>
+                      </tr>
+                      <tr className="bg-gray-50">
+                        <td colSpan="3" className="px-4 py-3 text-right font-bold text-gray-700">Annual Revenue ({selectedYear}):</td>
+                        <td className="px-4 py-3 text-sm font-bold text-emerald-700">{formatCurrency(yearlyRevenue)}</td>
+                      </tr>
+                      <tr className="bg-gradient-to-r from-slate-800 to-gray-900 text-white">
+                        <td colSpan="3" className="px-4 py-4 text-right font-bold text-lg">Net Value:</td>
+                        <td className="px-4 py-4 text-lg font-bold">
+                          {formatCurrency(netValue)}
+                        </td>
+                      </tr>
+                    </>
+                  );
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Price Schedule Grid */}
         <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl p-6 border border-gray-300 mx-4 lg:mx-20">
           <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Age-Based Price Schedule</h3>
@@ -588,7 +723,7 @@ const AssetMarketValue = ({
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                 className="w-full p-3 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               >
-                {Array.from({ length: 10 }, (_, i) => (
+                {Array.from({ length: (endYear && endYear >= treeData.startYear) ? (endYear - treeData.startYear + 1) : 10 }, (_, i) => (
                   <option key={i} value={treeData.startYear + i}>
                     {treeData.startYear + i} (Year {i + 1})
                   </option>
