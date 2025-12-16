@@ -47,13 +47,22 @@ export default function BuffaloFamilyTree() {
     restPeriod: { months: 4, revenue: 0 }
   };
 
-  const calculateMonthlyRevenueForBuffalo = (buffaloId, acquisitionMonth, currentYear, currentMonth) => {
-    const monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
+  const calculateMonthlyRevenueForBuffalo = (buffaloId, acquisitionMonth, currentYear, currentMonth, absoluteAcquisitionMonth) => {
+    let monthsSinceAcquisition;
+
+    if (absoluteAcquisitionMonth !== undefined) {
+      const currentAbsolute = currentYear * 12 + currentMonth;
+      monthsSinceAcquisition = currentAbsolute - absoluteAcquisitionMonth;
+    } else {
+      // Fallback for old/legacy data
+      monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
+    }
 
     if (monthsSinceAcquisition < revenueConfig.landingPeriod) {
       return 0;
     }
 
+    // ... rest is same
     const productionMonths = monthsSinceAcquisition - revenueConfig.landingPeriod;
     const cyclePosition = productionMonths % 12;
 
@@ -114,7 +123,7 @@ export default function BuffaloFamilyTree() {
   };
 
   // Calculate total revenue data based on ACTUAL herd growth with staggered cycles
-  const calculateRevenueData = (herd, startYear, startMonth, totalYears) => {
+  const calculateRevenueData = (herd, startYear, startMonth, yearsToSimulate, totalMonthsDuration) => {
     const yearlyData = [];
     let totalRevenue = 0;
     let totalMatureBuffaloYears = 0;
@@ -122,15 +131,70 @@ export default function BuffaloFamilyTree() {
     const monthNames = ["January", "February", "March", "April", "May", "June",
       "July", "August", "September", "October", "November", "December"];
 
-    for (let yearOffset = 0; yearOffset < totalYears; yearOffset++) {
+    // Calculate the absolute end month index (0-based from start of simulation)
+    // 0 = startYear/startMonth.
+    // Cutoff is at totalMonthsDuration - 1.
+    const absoluteStartMonth = startYear * 12 + startMonth;
+    const absoluteEndMonth = absoluteStartMonth + totalMonthsDuration - 1;
+
+    for (let yearOffset = 0; yearOffset < yearsToSimulate; yearOffset++) {
       const currentYear = startYear + yearOffset;
 
-      const { annualRevenue, matureBuffaloes, totalBuffaloes } =
-        calculateAnnualRevenueForHerd(herd, startYear, startMonth, currentYear);
+      // Custom annual calculation to support monthly cutoff
+      let annualRevenue = 0;
+      const matureBuffaloIds = new Set();
+      let annualMatureBuffalosCount = 0; // Cumulative for average
+
+      for (let month = 0; month < 12; month++) {
+        const currentAbsoluteMonth = currentYear * 12 + month;
+
+        // Skip calculation if before start or after end
+        if (currentAbsoluteMonth < absoluteStartMonth || currentAbsoluteMonth > absoluteEndMonth) {
+          continue;
+        }
+
+        let monthlyProducingCount = 0;
+
+        herd.forEach(buffalo => {
+          let isProducing = false;
+
+          if (buffalo.generation === 0) {
+            isProducing = true;
+          } else {
+            const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
+            const ageInMonths = ((currentYear - buffalo.birthYear) * 12) + (month - birthMonth);
+            if (ageInMonths >= 36) {
+              isProducing = true;
+            }
+          }
+
+          if (isProducing) {
+            monthlyProducingCount++;
+            matureBuffaloIds.add(buffalo.id);
+
+            const revenue = calculateMonthlyRevenueForBuffalo(
+              buffalo.id,
+              buffalo.acquisitionMonth,
+              currentYear,
+              month,
+              buffalo.absoluteAcquisitionMonth
+            );
+
+            annualRevenue += revenue;
+          }
+        });
+
+        // Track "average" mature buffaloes?
+        // Or just max? "matureBuffaloes" in output usually refers to count.
+      }
+
+      const matureBuffaloes = matureBuffaloIds.size;
+      const totalBuffaloes = herd.filter(buffalo => buffalo.birthYear <= currentYear).length;
 
       totalRevenue += annualRevenue;
       totalMatureBuffaloYears += matureBuffaloes;
 
+      // Average monthly revenue (spread over valid months? or 12?) using 12 for annual View consistency
       const monthlyRevenuePerBuffalo = matureBuffaloes > 0 ? annualRevenue / (matureBuffaloes * 12) : 0;
 
       yearlyData.push({
@@ -151,8 +215,8 @@ export default function BuffaloFamilyTree() {
     return {
       yearlyData,
       totalRevenue,
-      totalUnits: totalMatureBuffaloYears / totalYears,
-      averageAnnualRevenue: totalRevenue / totalYears,
+      totalUnits: yearsToSimulate > 0 ? totalMatureBuffaloYears / yearsToSimulate : 0,
+      averageAnnualRevenue: yearsToSimulate > 0 ? totalRevenue / yearsToSimulate : 0,
       revenueConfig,
       totalMatureBuffaloYears
     };
@@ -173,6 +237,8 @@ export default function BuffaloFamilyTree() {
         // Unit 1: A, Unit 2: C, etc.
         const id1 = String.fromCharCode(65 + (u * 2));
         const date1 = new Date(startYear, startMonth, startDay);
+        const absAcq1 = startYear * 12 + startMonth;
+
         herd.push({
           id: id1,
           age: 5,
@@ -181,6 +247,7 @@ export default function BuffaloFamilyTree() {
           generation: 0,
           birthYear: startYear - 5,
           acquisitionMonth: startMonth,
+          absoluteAcquisitionMonth: absAcq1,
           unit: u + 1,
           rootId: id1, // Root ID for lineage tracking
           startedAt: date1.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -190,6 +257,8 @@ export default function BuffaloFamilyTree() {
         // Unit 1: B, Unit 2: D, etc.
         const id2 = String.fromCharCode(65 + (u * 2) + 1);
         const date2 = new Date(startYear, startMonth + 6, startDay);
+        const absAcq2 = startYear * 12 + startMonth + 6;
+
         herd.push({
           id: id2,
           age: 5,
@@ -198,19 +267,45 @@ export default function BuffaloFamilyTree() {
           generation: 0,
           birthYear: startYear - 5,
           acquisitionMonth: (startMonth + 6) % 12,
+          absoluteAcquisitionMonth: absAcq2,
           unit: u + 1,
           rootId: id2, // Root ID for lineage tracking
           startedAt: date2.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
         });
       }
 
-      // Simulate years
-      for (let year = 1; year <= totalYears; year++) {
+      // Determine duration and calendar range
+      // e.g. 10 years defined. Start July 2026.
+      // Total Months = 120.
+      // End Date = July 2026 + 120 months = June 2036.
+      // Calendar Years: 2026, ... 2036 (11 years).
+
+      const totalMonthsDuration = totalYears * 12;
+      const endYearValue = startYear + Math.floor((startMonth + totalMonthsDuration - 1) / 12);
+      const yearsToSimulate = endYearValue - startYear + 1;
+
+      const absoluteStartMonth = startYear * 12 + startMonth;
+      const absoluteEndMonth = absoluteStartMonth + totalMonthsDuration - 1;
+
+      // Simulate years (Calendar Years)
+      for (let year = 1; year <= yearsToSimulate; year++) {
         const currentYear = startYear + (year - 1);
         const matureBuffaloes = herd.filter((b) => b.age >= 3);
 
         // Each mature buffalo gives birth to one offspring per year
         matureBuffaloes.forEach((parent) => {
+          // Check if expected birth is within simulation range
+          const birthMonth = parent.acquisitionMonth; // Inherits cycle
+          const absoluteBirthMonth = currentYear * 12 + birthMonth;
+
+          if (absoluteBirthMonth > absoluteEndMonth) {
+            return; // Skip birth if after simulation end
+          }
+
+          if (absoluteBirthMonth < absoluteStartMonth) {
+            return; // Skip birth if before simulation start
+          }
+
           if (!offspringCounts[parent.id]) {
             offspringCounts[parent.id] = 0;
           }
@@ -225,6 +320,7 @@ export default function BuffaloFamilyTree() {
             parentId: parent.id,
             birthYear: currentYear,
             acquisitionMonth: parent.acquisitionMonth, // Inherits cycle offset
+            absoluteAcquisitionMonth: absoluteBirthMonth, // Offspring start producing from birth (maturation logic handles age)
             generation: parent.generation + 1,
             unit: parent.unit,
             rootId: parent.rootId, // Inherit root ID
@@ -239,18 +335,27 @@ export default function BuffaloFamilyTree() {
       }
 
       // Calculate revenue data based on ACTUAL herd growth with staggered cycles
-      const revenueData = calculateRevenueData(herd, startYear, startMonth, totalYears);
+      // Correctly pass the Calendar Years count and Total Month Duration
+      const revenueData = calculateRevenueData(herd, startYear, startMonth, yearsToSimulate, totalMonthsDuration);
 
       // Calculate total asset value at the end of simulation
-      const endYear = startYear + totalYears - 1;
+      // endYear is now the last calendar year involved
+      const endYear = startYear + yearsToSimulate - 1;
+      // The actual end month of the simulation (0-11)
+      const endMonthOfSimulation = absoluteEndMonth % 12;
+
       let totalAssetValue = 0;
       herd.forEach(buffalo => {
-        // Assume December of the last year for validation
-        const ageInMonths = calculateAgeInMonths(buffalo, endYear, 11);
+        // Calculate age at the specific end month of the simulation
+        const ageInMonths = calculateAgeInMonths(buffalo, endYear, endMonthOfSimulation);
 
         // Only count buffaloes born before or in the last year
         if (buffalo.birthYear <= endYear) {
-          totalAssetValue += getBuffaloValueByAge(ageInMonths);
+          // Double check if buffalo was born after simulation end (shouldn't be in herd, but safety check)
+          const birthAbsolute = buffalo.birthYear * 12 + (buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0));
+          if (birthAbsolute <= absoluteEndMonth) {
+            totalAssetValue += getBuffaloValueByAge(ageInMonths);
+          }
         }
       });
 
@@ -265,6 +370,11 @@ export default function BuffaloFamilyTree() {
           let annualCPF = 0;
 
           for (let month = 0; month < 12; month++) {
+            const currentAbsoluteMonth = year * 12 + month;
+            if (currentAbsoluteMonth < absoluteStartMonth || currentAbsoluteMonth > absoluteEndMonth) {
+              continue;
+            }
+
             herd.forEach(buffalo => {
               // --- Revenue Calculation ---
               let isRevenueApplicable = true;
@@ -276,15 +386,17 @@ export default function BuffaloFamilyTree() {
                 }
               }
 
+              let monthlyRevenue = 0;
               if (isRevenueApplicable) {
-                const revenue = calculateMonthlyRevenueForBuffalo(
+                monthlyRevenue = calculateMonthlyRevenueForBuffalo(
                   buffalo.id,
                   buffalo.acquisitionMonth,
                   year,
-                  month
+                  month,
+                  buffalo.absoluteAcquisitionMonth
                 );
-                if (revenue > 0) {
-                  annualRevenue += revenue;
+                if (monthlyRevenue > 0) {
+                  annualRevenue += monthlyRevenue;
                 }
               }
 
@@ -296,11 +408,18 @@ export default function BuffaloFamilyTree() {
                   isCpfApplicable = true;
                 } else {
                   // Type B: Free Period Check
-                  // Fix: Check presence based on simulation start interaction, not birth year, to avoid charging CPF before acquisition
-                  const isPresentInSimulation = year > startYear || (year === startYear && month >= buffalo.acquisitionMonth);
+                  // Check presence using Absolute Acquisition Month
+                  const currentAbsolute = year * 12 + month;
+                  const isPresentInSimulation = buffalo.absoluteAcquisitionMonth !== undefined
+                    ? currentAbsolute >= buffalo.absoluteAcquisitionMonth
+                    : (year > startYear || (year === startYear && month >= buffalo.acquisitionMonth));
 
                   if (isPresentInSimulation) {
-                    const isFreePeriod = (year === startYear && month >= 6) || (year === startYear + 1 && month <= 5);
+                    // Free Period: 12 months starting 6 months after simulation start
+                    const absoluteStart = startYear * 12 + startMonth;
+                    const currentAbsolute = year * 12 + month;
+                    const monthsSinceStart = currentAbsolute - absoluteStart;
+                    const isFreePeriod = monthsSinceStart >= 6 && monthsSinceStart < 18;
                     if (!isFreePeriod) {
                       isCpfApplicable = true;
                     }
@@ -336,7 +455,7 @@ export default function BuffaloFamilyTree() {
 
       herd.forEach(buffalo => {
         // 1. Age & Asset Value
-        const ageInMonths = calculateAgeInMonths(buffalo, endYear, 11);
+        const ageInMonths = calculateAgeInMonths(buffalo, endYear, endMonthOfSimulation);
         buffalo.ageInMonths = ageInMonths;
         buffalo.ageDisplay = `${Math.floor(ageInMonths / 12)}y ${ageInMonths % 12}m`;
         buffalo.currentAssetValue = getBuffaloValueByAge(ageInMonths);
@@ -356,6 +475,11 @@ export default function BuffaloFamilyTree() {
 
         for (let y = calcStartYear; y <= endYear; y++) {
           for (let m = 0; m < 12; m++) {
+            const currentAbsoluteMonth = y * 12 + m;
+            if (currentAbsoluteMonth < absoluteStartMonth || currentAbsoluteMonth > absoluteEndMonth) {
+              continue;
+            }
+
             // --- Revenue Logic ---
             let isRevenueApplicable = true;
             // For offspring (Gen > 0), revenue only starts after 36 months
@@ -365,19 +489,21 @@ export default function BuffaloFamilyTree() {
               if (ageAtMonth < 36) isRevenueApplicable = false;
             }
 
+            let monthlyRevenue = 0;
             if (isRevenueApplicable) {
-              const revenue = calculateMonthlyRevenueForBuffalo(
+              monthlyRevenue = calculateMonthlyRevenueForBuffalo(
                 buffalo.id,
                 buffalo.acquisitionMonth,
                 y,
-                m
+                m,
+                buffalo.absoluteAcquisitionMonth
               );
-              if (revenue > 0) {
-                lifetimeRevenue += revenue;
+              if (monthlyRevenue > 0) {
+                lifetimeRevenue += monthlyRevenue;
               }
             }
 
-            // --- CPF Logic (Mirrors calculateTotalFinancials) ---
+            // --- CPF Calculation ---
             let isCpfApplicable = false;
             if (buffalo.generation === 0) {
               const isFirstInUnit = (buffalo.id.charCodeAt(0) - 65) % 2 === 0;
@@ -385,21 +511,26 @@ export default function BuffaloFamilyTree() {
                 isCpfApplicable = true;
               } else {
                 // Type B: Free Period Check
-                const isPresentInSimulation = y > startYear || (y === startYear && m >= buffalo.acquisitionMonth);
+                const currentAbsolute = y * 12 + m;
+                const isPresentInSimulation = buffalo.absoluteAcquisitionMonth !== undefined
+                  ? currentAbsolute >= buffalo.absoluteAcquisitionMonth
+                  : (y > startYear || (y === startYear && m >= buffalo.acquisitionMonth));
 
                 if (isPresentInSimulation) {
-                  // Free period: July of startYear (month 6) to June of startYear+1 (month 5)
-                  const isFreePeriod = (y === startYear && m >= 6) || (y === startYear + 1 && m <= 5);
+                  // Free Period: 12 months starting 6 months after simulation start
+                  const absoluteStart = startYear * 12 + startMonth;
+                  const currentAbsolute = y * 12 + m;
+                  const monthsSinceStart = currentAbsolute - absoluteStart;
+                  const isFreePeriod = monthsSinceStart >= 6 && monthsSinceStart < 18;
                   if (!isFreePeriod) {
                     isCpfApplicable = true;
                   }
                 }
               }
             } else {
-              // Offspring: Pay CPF after 36 months
               const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
-              const ageAtMonth = ((y - buffalo.birthYear) * 12) + (m - birthMonth);
-              if (ageAtMonth >= 36) {
+              const ageInMonths = ((y - buffalo.birthYear) * 12) + (m - birthMonth);
+              if (ageInMonths >= 36) {
                 isCpfApplicable = true;
               }
             }
@@ -439,7 +570,7 @@ export default function BuffaloFamilyTree() {
 
       founders.forEach(founder => {
         const lineageBuffaloes = herd.filter(b => b.rootId === founder.id);
-        const lineageRevenueData = calculateRevenueData(lineageBuffaloes, startYear, startMonth, totalYears);
+        const lineageRevenueData = calculateRevenueData(lineageBuffaloes, startYear, startMonth, yearsToSimulate, totalMonthsDuration);
 
         // Calculate lineage asset value
         let lineageAssetValue = 0;
