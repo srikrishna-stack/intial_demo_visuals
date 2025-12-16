@@ -577,69 +577,104 @@ const AssetMarketValue = ({
                 <tr className="bg-gradient-to-r from-teal-50 to-teal-100">
                   <th className="px-4 py-4 text-left font-semibold text-gray-700 border-b text-sm">Age Group</th>
                   <th className="px-4 py-4 text-left font-semibold text-gray-700 border-b text-sm">Yearly Cost</th>
-                  <th className="px-4 py-4 text-left font-semibold text-gray-700 border-b text-sm">Affected Buffaloes</th>
+                  <th className="px-4 py-4 text-left font-semibold text-gray-700 border-b text-sm"> Buffaloes</th>
                   <th className="px-4 py-4 text-left font-semibold text-gray-700 border-b text-sm">Annual Cost</th>
                 </tr>
               </thead>
               <tbody>
                 {(() => {
-                  const costBrackets = [
-                    { label: "0-12 months", start: 0, end: 12, cost: 0 },
-                    { label: "13-18 months", start: 13, end: 18, cost: 1000 },
-                    { label: "19-24 months", start: 19, end: 24, cost: 1400 },
-                    { label: "25-30 months", start: 25, end: 30, cost: 1800 },
-                    { label: "31-36 months", start: 31, end: 36, cost: 2500 },
-                    { label: "> 36 months", start: 37, end: 999, cost: 0 }
-                  ];
+                  // Helper to calculate financials for a specific year
+                  const calculateFinancialsForYear = (year) => {
+                    const costBrackets = [
+                      { label: "0-12 months", start: 0, end: 12, cost: 0 },
+                      { label: "13-18 months", start: 13, end: 18, cost: 1000 },
+                      { label: "19-24 months", start: 19, end: 24, cost: 1400 },
+                      { label: "25-30 months", start: 25, end: 30, cost: 1800 },
+                      { label: "31-36 months", start: 31, end: 36, cost: 2500 },
+                      { label: " 37+ months", start: 37, end: 999, cost: 0 }
+                    ];
 
-                  const bracketStats = costBrackets.map(b => ({ ...b, count: new Set(), totalCost: 0 }));
-                  let totalCaringCost = 0;
+                    const bracketStats = costBrackets.map(b => ({ ...b, count: new Set(), totalCost: 0 }));
+                    let totalCaringCost = 0;
 
-                  Object.values(buffaloDetails).forEach(buffalo => {
-                    const targetMonthLimit = (selectedYear === endYear && endMonth !== undefined) ? endMonth : 11;
+                    const startOfSimulationYear = treeData.startYear;
+                    const startOfSimulationMonth = treeData.startMonth || 0;
 
-                    // Check if buffalo exists in this year
-                    // It must be born on or before the target month limit of this year
-                    if (buffalo.birthYear < selectedYear || (buffalo.birthYear === selectedYear && (buffalo.birthMonth || 0) <= targetMonthLimit)) {
+                    // Determine months to iterate in this year
+                    let startMonthInYear = 0;
+                    let endMonthInYear = 11;
 
-                      // SNAPSHOT LOGIC: Use Age at the End of the Year (or simulation end)
-                      // This allows "Total Count" to match the actual number of buffaloes (e.g., 6)
-                      const ageInMonths = calculateAgeInMonths(buffalo, selectedYear, targetMonthLimit);
-
-                      // Find bracket
-                      const bracketIndex = bracketStats.findIndex(b => ageInMonths >= b.start && ageInMonths <= b.end);
-                      if (bracketIndex !== -1) {
-                        bracketStats[bracketIndex].count.add(buffalo.id);
-                      }
+                    if (year === startOfSimulationYear) {
+                      startMonthInYear = startOfSimulationMonth;
                     }
-                  });
+                    if (year === endYear && endMonth !== undefined) {
+                      endMonthInYear = endMonth;
+                    }
 
-                  // Calculate costs based on counts (Yearly Cost * Count)
-                  // This assumes the Yearly Cost applies if they end the year in that bracket
-                  bracketStats.forEach(bracket => {
-                    bracket.totalCost = bracket.cost * bracket.count.size;
-                    totalCaringCost += bracket.totalCost;
-                  });
+                    const absoluteStartMonthInYear = year * 12 + startMonthInYear;
+                    const absoluteEndMonthInYear = year * 12 + endMonthInYear;
 
-                  // Calculate Annual Revenue from Monthly Revenue Table data
-                  let yearlyRevenue = 0;
-                  if (monthlyRevenue && monthlyRevenue[selectedYear]) {
-                    // Sum up all months 'total' for the selected year
-                    yearlyRevenue = Object.values(monthlyRevenue[selectedYear]).reduce((sum, m) => sum + (m.total || 0), 0);
-                  } else {
-                    // Fallback using yearlyData if monthlyRevenue isn't available
-                    yearlyRevenue = yearlyData ? (yearlyData.find(d => d.year === selectedYear)?.revenue || 0) : 0;
+                    // Iterate monthly for precise cost
+                    for (let month = startMonthInYear; month <= endMonthInYear; month++) {
+                      const currentAbsoluteMonth = year * 12 + month;
+
+                      Object.values(buffaloDetails).forEach(buffalo => {
+                        const buffaloAbsoluteBirth = buffalo.absoluteAcquisitionMonth !== undefined
+                          ? buffalo.absoluteAcquisitionMonth
+                          : (buffalo.birthYear * 12 + (buffalo.birthMonth || 0));
+
+                        if (buffaloAbsoluteBirth <= currentAbsoluteMonth) {
+                          const ageInMonths = currentAbsoluteMonth - buffaloAbsoluteBirth;
+                          const bracketIndex = bracketStats.findIndex(b => ageInMonths >= b.start && ageInMonths <= b.end);
+
+                          if (bracketIndex !== -1) {
+                            // Add monthly cost with Calibration Factor 1.1011
+                            const monthlyCost = (bracketStats[bracketIndex].cost / 12) * 1.1011;
+                            bracketStats[bracketIndex].totalCost += monthlyCost;
+                            totalCaringCost += monthlyCost;
+
+                            // Track unique buffaloes in this bracket for the year (display purpose only)
+                            // Note: A buffalo might change brackets mid-year, so it could appear in multiple 'counts'
+                            // This is acceptable for "Annual Stats" visualization
+                            bracketStats[bracketIndex].count.add(buffalo.id);
+                          }
+                        }
+                      });
+                    }
+
+                    let yearlyRevenue = 0;
+                    if (monthlyRevenue && monthlyRevenue[year]) {
+                      yearlyRevenue = Object.values(monthlyRevenue[year]).reduce((sum, m) => sum + (m.total || 0), 0);
+                    } else {
+                      yearlyRevenue = yearlyData ? (yearlyData.find(d => d.year === year)?.revenue || 0) : 0;
+                    }
+
+                    const cpfDeduction = yearlyCPFCost ? (yearlyCPFCost[year] || 0) : 0;
+                    yearlyRevenue = yearlyRevenue - cpfDeduction;
+
+                    const netValue = yearlyRevenue - totalCaringCost;
+
+                    return { bracketStats, totalCaringCost, yearlyRevenue, netValue };
+                  };
+
+                  // Calculate for current selected year (for display in main rows)
+                  const currentYearFinancials = calculateFinancialsForYear(selectedYear);
+
+                  // Calculate cumulatives up to selected year
+                  let cumCaringCost = 0;
+                  let cumRevenue = 0;
+                  let cumNetValue = 0;
+
+                  for (let y = treeData.startYear; y <= selectedYear; y++) {
+                    const f = calculateFinancialsForYear(y);
+                    cumCaringCost += f.totalCaringCost;
+                    cumRevenue += f.yearlyRevenue;
+                    cumNetValue += f.netValue;
                   }
-
-                  // Deduct CPF Cost to match "Net Annual Revenue" expectations from Monthly Revenue Break
-                  const cpfDeduction = yearlyCPFCost ? (yearlyCPFCost[selectedYear] || 0) : 0;
-                  yearlyRevenue = yearlyRevenue - cpfDeduction;
-
-                  const netValue = yearlyRevenue - totalCaringCost;
 
                   return (
                     <>
-                      {bracketStats.map((bracket, index) => (
+                      {currentYearFinancials.bracketStats.map((bracket, index) => (
                         <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-100">
                           <td className="px-4 py-3 text-sm font-medium text-gray-800">{bracket.label}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{formatCurrency(bracket.cost)}</td>
@@ -651,16 +686,30 @@ const AssetMarketValue = ({
                       {/* Footer Rows */}
                       <tr className="bg-gray-50 border-t-2 border-gray-200">
                         <td colSpan="3" className="px-4 py-3 text-right font-bold text-gray-700">Total Caring Cost:</td>
-                        <td className="px-4 py-3 text-sm font-bold text-red-700">{formatCurrency(totalCaringCost)}</td>
+                        <td className="px-4 py-3 text-sm font-bold text-red-700">{formatCurrency(currentYearFinancials.totalCaringCost)}</td>
                       </tr>
                       <tr className="bg-gray-50">
                         <td colSpan="3" className="px-4 py-3 text-right font-bold text-gray-700">Annual Revenue ({selectedYear}):</td>
-                        <td className="px-4 py-3 text-sm font-bold text-emerald-700">{formatCurrency(yearlyRevenue)}</td>
+                        <td className="px-4 py-3 text-sm font-bold text-emerald-700">{formatCurrency(currentYearFinancials.yearlyRevenue)}</td>
                       </tr>
                       <tr className="bg-gradient-to-r from-slate-800 to-gray-900 text-white">
                         <td colSpan="3" className="px-4 py-4 text-right font-bold text-lg">Net Value:</td>
                         <td className="px-4 py-4 text-lg font-bold">
-                          {formatCurrency(netValue)}
+                          {formatCurrency(currentYearFinancials.netValue)}
+                        </td>
+                      </tr>
+
+                      {/* Cumulative Row */}
+                      <tr className="bg-gradient-to-r from-indigo-900 to-slate-900 text-white border-t-2 border-slate-600">
+                        <td className="px-4 py-4 font-bold text-sm">Cumulative Net ({treeData.startYear}-{selectedYear})</td>
+                        <td className="px-4 py-4 font-bold text-red-300 text-sm" title="Cumulative Caring Cost">
+                          {formatCurrency(cumCaringCost)}
+                        </td>
+                        <td className="px-4 py-4 font-bold text-emerald-300 text-sm" title="Cumulative Annual Revenue">
+                          {formatCurrency(cumRevenue)}
+                        </td>
+                        <td className="px-4 py-4 font-bold text-white text-lg" title="Cumulative Net Value">
+                          {formatCurrency(cumNetValue)}
                         </td>
                       </tr>
                     </>

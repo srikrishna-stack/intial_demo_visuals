@@ -138,8 +138,21 @@ const HeaderControls = ({
                 <span className="text-sm font-bold text-green-600">{formatCurrency(treeData.summaryStats.totalNetRevenue)}</span>
               </div>
               <div className="flex flex-col min-w-[80px]">
+                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Cumulative Net
+                </span>
+                <span className="text-[10px] font-medium text-gray-500  tracking-wide">(with Calve Charges)
+                </span>
+
+
+                <span className="text-sm font-bold text-emerald-600">{formatCurrency(treeData.summaryStats.totalNetRevenueWithCaring)}</span>
+              </div>
+              <div className="flex flex-col min-w-[80px]">
                 <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Asset Value</span>
                 <span className="text-sm font-bold text-blue-600">{formatCurrency(treeData.summaryStats.totalAssetValue)}</span>
+              </div>
+              <div className="flex flex-col min-w-[80px]">
+                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">ROI (Net + Assets)</span>
+                <span className="text-sm font-bold text-indigo-700">{formatCurrency(treeData.summaryStats.roi)}</span>
               </div>
 
             </div>
