@@ -451,10 +451,10 @@ export default function BuffaloFamilyTree() {
       const calculateTotalCaringCost = () => {
         const costBrackets = [
           { label: "0-12 months", start: 0, end: 12, cost: 0 },
-          { label: "13-18 months", start: 13, end: 18, cost: 1000 },
-          { label: "19-24 months", start: 19, end: 24, cost: 1400 },
-          { label: "25-30 months", start: 25, end: 30, cost: 1800 },
-          { label: "31-36 months", start: 31, end: 36, cost: 2500 },
+          { label: "13-18 months", start: 13, end: 18, cost: 6000 },
+          { label: "19-24 months", start: 19, end: 24, cost: 8400 },
+          { label: "25-30 months", start: 25, end: 30, cost: 10800 },
+          { label: "31-36 months", start: 31, end: 36, cost: 15000 },
           { label: " 37+ months", start: 37, end: 999, cost: 0 }
         ];
 
