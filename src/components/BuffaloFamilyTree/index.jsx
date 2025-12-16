@@ -607,7 +607,7 @@ export default function BuffaloFamilyTree() {
           totalRevenue: totalRevenue,
           totalNetRevenue: totalNetRevenue,
           totalNetRevenueWithCaring: totalNetRevenue - totalCaringCost,
-          roi: totalNetRevenue + totalAssetValue,
+          roi: (totalNetRevenue - totalCaringCost) + totalAssetValue,
           totalAssetValue: totalAssetValue,
           duration: totalYears
         },
