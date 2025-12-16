@@ -614,33 +614,30 @@ const AssetMarketValue = ({
                     const absoluteStartMonthInYear = year * 12 + startMonthInYear;
                     const absoluteEndMonthInYear = year * 12 + endMonthInYear;
 
-                    // Iterate monthly for precise cost
-                    for (let month = startMonthInYear; month <= endMonthInYear; month++) {
-                      const currentAbsoluteMonth = year * 12 + month;
+                    // Simplified: No monthly cost loop. Using Snapshot counts below.
 
-                      Object.values(buffaloDetails).forEach(buffalo => {
-                        const buffaloAbsoluteBirth = buffalo.absoluteAcquisitionMonth !== undefined
-                          ? buffalo.absoluteAcquisitionMonth
-                          : (buffalo.birthYear * 12 + (buffalo.birthMonth || 0));
+                    // Snapshot Logic for Counts (End of selected year)
+                    const snapshotAbsoluteMonth = year * 12 + endMonthInYear;
+                    Object.values(buffaloDetails).forEach(buffalo => {
+                      const buffaloAbsoluteBirth = buffalo.birthYear * 12 + (buffalo.birthMonth || 0);
 
-                        if (buffaloAbsoluteBirth <= currentAbsoluteMonth) {
-                          const ageInMonths = currentAbsoluteMonth - buffaloAbsoluteBirth;
-                          const bracketIndex = bracketStats.findIndex(b => ageInMonths >= b.start && ageInMonths <= b.end);
+                      // Only count if born before or at snapshot date
+                      if (buffaloAbsoluteBirth <= snapshotAbsoluteMonth) {
+                        const ageInMonths = snapshotAbsoluteMonth - buffaloAbsoluteBirth;
+                        const bracketIndex = bracketStats.findIndex(b => ageInMonths >= b.start && ageInMonths <= b.end);
 
-                          if (bracketIndex !== -1) {
-                            // Add monthly cost with Calibration Factor 1.1011
-                            const monthlyCost = (bracketStats[bracketIndex].cost / 12) * 1.1011;
-                            bracketStats[bracketIndex].totalCost += monthlyCost;
-                            totalCaringCost += monthlyCost;
-
-                            // Track unique buffaloes in this bracket for the year (display purpose only)
-                            // Note: A buffalo might change brackets mid-year, so it could appear in multiple 'counts'
-                            // This is acceptable for "Annual Stats" visualization
-                            bracketStats[bracketIndex].count.add(buffalo.id);
-                          }
+                        if (bracketIndex !== -1) {
+                          bracketStats[bracketIndex].count.add(buffalo.id);
                         }
-                      });
-                    }
+                      }
+                    });
+
+                    // Simplified Cost Calculation (Aligned with Snapshot Counts)
+                    totalCaringCost = 0; // Reset
+                    bracketStats.forEach(bracket => {
+                      bracket.totalCost = bracket.count.size * bracket.cost;
+                      totalCaringCost += bracket.totalCost;
+                    });
 
                     let yearlyRevenue = 0;
                     if (monthlyRevenue && monthlyRevenue[year]) {

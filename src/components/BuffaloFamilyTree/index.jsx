@@ -460,37 +460,36 @@ export default function BuffaloFamilyTree() {
 
         let grandTotalCaringCost = 0;
 
-        // Iterate through absolute months of the simulation
+        // Iterate through each calendar year of the simulation
         for (let year = startYear; year <= endYear; year++) {
-          for (let month = 0; month < 12; month++) {
-            const currentAbsoluteMonth = year * 12 + month;
 
-            // Skip if outside simulation range
-            if (currentAbsoluteMonth < absoluteStartMonth || currentAbsoluteMonth > absoluteEndMonth) {
-              continue;
-            }
-
-            herd.forEach(buffalo => {
-              // Check if buffalo exists in this simulation month
-              const buffaloAbsoluteBirth = buffalo.absoluteAcquisitionMonth !== undefined
-                ? buffalo.absoluteAcquisitionMonth
-                : (buffalo.birthYear * 12 + (buffalo.birthMonth || 0));
-
-              if (buffaloAbsoluteBirth <= currentAbsoluteMonth) {
-                // Calculate age at this specific month
-                const ageInMonths = currentAbsoluteMonth - buffaloAbsoluteBirth;
-
-                // Find applicable cost bracket
-                const bracket = costBrackets.find(b => ageInMonths >= b.start && ageInMonths <= b.end);
-
-                if (bracket) {
-                  // Add monthly cost (Annual Cost / 12) * Calibration Factor
-                  // Calibration Factor 1.1011 aligns monthly logic with legacy snapshot logic target
-                  grandTotalCaringCost += (bracket.cost / 12) * 1.1011;
-                }
-              }
-            });
+          // Determine the snapshot month for this year
+          // Default: December (11)
+          // If it's the final year, use the actual end month of simulation
+          let snapshotMonth = 11;
+          if (year === endYear) {
+            snapshotMonth = endMonthOfSimulation;
           }
+
+          const snapshotAbsoluteMonth = year * 12 + snapshotMonth;
+
+          // For each buffalo, check its age at this snapshot point
+          herd.forEach(buffalo => {
+            const buffaloAbsoluteBirth = buffalo.birthYear * 12 + (buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0));
+
+            // Only count if born before or at snapshot date
+            if (buffaloAbsoluteBirth <= snapshotAbsoluteMonth) {
+              const ageInMonths = snapshotAbsoluteMonth - buffaloAbsoluteBirth;
+
+              // Find applicable cost bracket
+              const bracket = costBrackets.find(b => ageInMonths >= b.start && ageInMonths <= b.end);
+
+              if (bracket) {
+                // Add full annual cost for this buffalo in this year
+                grandTotalCaringCost += bracket.cost;
+              }
+            }
+          });
         }
 
         return Math.round(grandTotalCaringCost);
