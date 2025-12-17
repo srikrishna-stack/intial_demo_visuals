@@ -71,8 +71,8 @@ const TreeVisualization = ({
     revenue: filteredBuffaloes.reduce((sum, b) => sum + (b.lifetimeRevenue || 0), 0),
     netRevenue: activeFounderId === "all" && treeData.summaryStats ? treeData.summaryStats.totalNetRevenue : filteredBuffaloes.reduce((sum, b) => sum + (b.lifetimeNet || 0), 0),
     assetValue: filteredBuffaloes.reduce((sum, b) => sum + (b.currentAssetValue || 0), 0),
-    producing: filteredBuffaloes.filter(b => b.ageInMonths >= 36).length,
-    nonProducing: filteredBuffaloes.filter(b => b.ageInMonths < 36).length
+    producing: filteredBuffaloes.filter(b => b.ageInMonths >= 34).length,
+    nonProducing: filteredBuffaloes.filter(b => b.ageInMonths < 34).length
   };
 
   return (

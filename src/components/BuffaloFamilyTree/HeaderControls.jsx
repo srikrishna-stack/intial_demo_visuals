@@ -20,7 +20,8 @@ const HeaderControls = ({
   runSimulation,
   treeData,
   resetSimulation,
-  loading
+  loading,
+  headerStats
 }) => {
   const monthNames = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
@@ -135,16 +136,20 @@ const HeaderControls = ({
               </div>
               <div className="flex flex-col min-w-[80px]">
                 <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Cumulative Net</span>
-                <span className="text-sm font-bold text-green-600">{formatCurrency(treeData.summaryStats.totalNetRevenue)}</span>
+                <span className="text-sm font-bold text-green-600">
+                  {formatCurrency(treeData.summaryStats.totalNetRevenue)}
+                </span>
               </div>
               <div className="flex flex-col min-w-[80px]">
-                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Cumulative Net
+                {/* <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Cumulative Net
                 </span>
                 <span className="text-[10px] font-medium text-gray-500  tracking-wide">(with Calve Charges)
                 </span>
 
 
-                <span className="text-sm font-bold text-emerald-600">{formatCurrency(treeData.summaryStats.totalNetRevenueWithCaring)}</span>
+                <span className="text-sm font-bold text-emerald-600">
+                  {formatCurrency(treeData.summaryStats.totalNetRevenueWithCaring)}
+                </span> */}
               </div>
               <div className="flex flex-col min-w-[80px]">
                 <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Asset Value</span>

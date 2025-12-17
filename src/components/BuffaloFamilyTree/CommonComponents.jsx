@@ -46,27 +46,22 @@ export const calculateAgeInMonths = (buffalo, targetYear, targetMonth = 0) => {
 };
 
 // Get Buffalo Value by Age
+// Get Buffalo Value by Age
 export const getBuffaloValueByAge = (ageInMonths) => {
-  if (ageInMonths >= 60) {
+  if (ageInMonths >= 48) {
+    return 200000;
+  } else if (ageInMonths >= 41) {
     return 175000;
-  } else if (ageInMonths >= 48) {
+  } else if (ageInMonths >= 35) {
     return 150000;
-  } else if (ageInMonths >= 40) {
+  } else if (ageInMonths >= 25) {
     return 100000;
-  } else if (ageInMonths >= 36) {
-    return 50000;
-  } else if (ageInMonths >= 30) {
-    return 50000;
-  } else if (ageInMonths >= 24) {
-    return 35000;
-  } else if (ageInMonths >= 18) {
+  } else if (ageInMonths >= 19) {
+    return 40000;
+  } else if (ageInMonths >= 13) {
     return 25000;
-  } else if (ageInMonths >= 12) {
-    return 12000;
-  } else if (ageInMonths >= 6) {
-    return 6000;
   } else {
-    return 3000;
+    return 10000;
   }
 };
 

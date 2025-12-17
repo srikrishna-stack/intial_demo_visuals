@@ -8,7 +8,8 @@ const MonthlyRevenueBreak = ({
   calculateCumulativeRevenueUntilYear,
   calculateTotalCumulativeRevenueUntilYear,
   monthNames,
-  formatCurrency
+  formatCurrency,
+  setHeaderStats
 }) => {
   const [selectedYear, setSelectedYear] = useState(treeData.startYear);
   const [selectedUnit, setSelectedUnit] = useState(1);
@@ -21,7 +22,7 @@ const MonthlyRevenueBreak = ({
       // Or if it's M1/M2 which are main units
       if (buffalo.generation === 0) return true;
 
-      if (selectedYear < buffalo.birthYear + 3) {
+      if (selectedYear < buffalo.birthYear + 2) {
         return false;
       }
 
@@ -29,7 +30,10 @@ const MonthlyRevenueBreak = ({
         return (monthlyRevenue[selectedYear]?.[monthIndex]?.buffaloes[buffalo.id] || 0) > 0;
       });
 
-      return hasRevenue;
+      // Show if it has revenue OR is of CPF paying age (>= 24 months)
+      // Since we already filtered out < 2 years above, we can just return true here
+      // to ensure we show the "CPF Only" rows.
+      return true;
     });
 
   // Helper to check precise CPF applicability
@@ -80,7 +84,7 @@ const MonthlyRevenueBreak = ({
     } else if (buffalo.generation >= 1) {
       // Child CPF: Age >= 36 months
       const ageInMonths = calculateAgeInMonths(buffalo, year, month);
-      if (ageInMonths >= 36) {
+      if (ageInMonths >= 24) {
         return true;
       }
     }
@@ -121,7 +125,7 @@ const MonthlyRevenueBreak = ({
       if (monthsWithCPF === 12) reason = "Full Year";
       else if (monthsWithCPF > 0) reason = `Partial (${monthsWithCPF} months)`;
       else if (buffalo.id === 'B' && selectedYear <= treeData.startYear + 1) reason = "Free Period";
-      else if (buffalo.generation > 0) reason = "Age < 3 years";
+      else if (buffalo.generation > 0) reason = "Age < 24 months";
 
       // Only add to details if relevant (generating income or has CPF)
       const inDisplayList = unitBuffaloes.find(b => b.id === buffalo.id);
@@ -174,6 +178,17 @@ const MonthlyRevenueBreak = ({
 
   const cumulativeCPFCost = calculateCumulativeCPFCost();
   const cumulativeNetRevenue = totalCumulativeUntilYear - cumulativeCPFCost;
+
+  // Sync with Header
+  React.useEffect(() => {
+    if (typeof setHeaderStats === 'function') {
+      setHeaderStats({
+        cumulativeNetRevenue,
+        totalRevenue: totalCumulativeUntilYear,
+        endYear: selectedYear
+      });
+    }
+  }, [cumulativeNetRevenue, totalCumulativeUntilYear, selectedYear, setHeaderStats]);
 
   // Helper to calculate dynamic date range string
   const getOrdinal = (n) => {
@@ -391,20 +406,42 @@ const MonthlyRevenueBreak = ({
                             low: 'text-slate-500'
                           };
 
+                          const isCpfApplicable = isCpfApplicableForMonth(buffalo, selectedYear, monthIndex);
+                          const cpfAmount = 13000 / 12;
+
                           return (
                             <td
                               key={buffalo.id}
-                              className={`py-4 px-3 text-center transition-all duration-200 border-b border-slate-200 ${bgColors[revenueType]}`}
+                              className={`py-4 px-3 text-center transition-all duration-200 border-b border-slate-200 ${revenue > 0
+                                ? bgColors[revenueType]
+                                : isCpfApplicable
+                                  ? 'bg-rose-50 hover:bg-rose-100'
+                                  : 'bg-slate-50 hover:bg-slate-100'
+                                }`}
                               style={{
                                 borderRight: buffaloIndex === unitBuffaloes.length - 1 ? '2px solid #cbd5e1' : '1px solid #e2e8f0'
                               }}
                             >
-                              <div className={`font-semibold text-base ${textColors[revenueType]}`}>
-                                {formatCurrency(revenue)}
+                              <div className={`font-semibold text-base ${revenue > 0
+                                ? textColors[revenueType]
+                                : isCpfApplicable
+                                  ? 'text-rose-600'
+                                  : 'text-slate-400'
+                                }`}>
+                                {revenue > 0
+                                  ? formatCurrency(revenue)
+                                  : isCpfApplicable
+                                    ? `0 (${Math.round(cpfAmount)})`
+                                    : '-'}
                               </div>
                               {revenue > 0 && (
                                 <div className="text-sm text-slate-500 mt-1">
                                   {revenueType.charAt(0).toUpperCase() + revenueType.slice(1)}
+                                </div>
+                              )}
+                              {revenue === 0 && isCpfApplicable && (
+                                <div className="text-xs text-rose-400 mt-1 font-medium">
+                                  CPF Only
                                 </div>
                               )}
                             </td>

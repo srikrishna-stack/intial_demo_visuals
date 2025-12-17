@@ -19,6 +19,7 @@ export default function BuffaloFamilyTree() {
   const [isDragging, setIsDragging] = useState(false);
   const [activeGraph, setActiveGraph] = useState("buffaloes");
   const [activeTab, setActiveTab] = useState("familyTree");
+  const [headerStats, setHeaderStats] = useState(null);
 
   const containerRef = useRef(null);
   const treeContainerRef = useRef(null);
@@ -47,7 +48,7 @@ export default function BuffaloFamilyTree() {
     restPeriod: { months: 4, revenue: 0 }
   };
 
-  const calculateMonthlyRevenueForBuffalo = (buffaloId, acquisitionMonth, currentYear, currentMonth, absoluteAcquisitionMonth) => {
+  const calculateMonthlyRevenueForBuffalo = (buffaloId, acquisitionMonth, currentYear, currentMonth, absoluteAcquisitionMonth, generation = 0) => {
     let monthsSinceAcquisition;
 
     if (absoluteAcquisitionMonth !== undefined) {
@@ -58,12 +59,17 @@ export default function BuffaloFamilyTree() {
       monthsSinceAcquisition = (currentYear - startYear) * 12 + (currentMonth - acquisitionMonth);
     }
 
-    if (monthsSinceAcquisition < revenueConfig.landingPeriod) {
+    let offset = 2;
+    if (generation > 0) {
+      offset = 34; // Standardized for all offspring
+    }
+
+    if (monthsSinceAcquisition < offset) {
       return 0;
     }
 
     // ... rest is same
-    const productionMonths = monthsSinceAcquisition - revenueConfig.landingPeriod;
+    const productionMonths = monthsSinceAcquisition - offset;
     const cyclePosition = productionMonths % 12;
 
     if (cyclePosition < revenueConfig.highRevenuePhase.months) {
@@ -92,7 +98,8 @@ export default function BuffaloFamilyTree() {
           // Precise age check
           const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
           const ageInMonths = ((currentYear - buffalo.birthYear) * 12) + (month - birthMonth);
-          if (ageInMonths >= 36) {
+          const threshold = 34; // Standardized for all offspring
+          if (ageInMonths >= threshold) {
             isProducing = true;
           }
         }
@@ -104,7 +111,9 @@ export default function BuffaloFamilyTree() {
             buffalo.id,
             buffalo.acquisitionMonth, // Cycle offset
             currentYear,
-            month
+            month,
+            buffalo.absoluteAcquisitionMonth, // Should be passed if available
+            buffalo.generation
           );
 
           annualRevenue += revenue;
@@ -163,7 +172,8 @@ export default function BuffaloFamilyTree() {
           } else {
             const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
             const ageInMonths = ((currentYear - buffalo.birthYear) * 12) + (month - birthMonth);
-            if (ageInMonths >= 36) {
+            const threshold = 34; // Standardized for all offspring
+            if (ageInMonths >= threshold) {
               isProducing = true;
             }
           }
@@ -177,7 +187,8 @@ export default function BuffaloFamilyTree() {
               buffalo.acquisitionMonth,
               currentYear,
               month,
-              buffalo.absoluteAcquisitionMonth
+              buffalo.absoluteAcquisitionMonth,
+              buffalo.generation
             );
 
             annualRevenue += revenue;
@@ -339,15 +350,17 @@ export default function BuffaloFamilyTree() {
       const revenueData = calculateRevenueData(herd, startYear, startMonth, yearsToSimulate, totalMonthsDuration);
 
       // Calculate total asset value at the end of simulation
-      // endYear is now the last calendar year involved
-      const endYear = startYear + yearsToSimulate - 1;
+      // endYear must cover the full range, including the partial last year
+      const endYear = Math.floor(absoluteEndMonth / 12);
       // The actual end month of the simulation (0-11)
       const endMonthOfSimulation = absoluteEndMonth % 12;
 
       let totalAssetValue = 0;
       herd.forEach(buffalo => {
         // Calculate age at the specific end month of the simulation
-        const ageInMonths = calculateAgeInMonths(buffalo, endYear, endMonthOfSimulation);
+        // Consistent with Table: Use 12 (Jan next year equivalent) if end month is 11 (Dec)
+        const targetMonth = (endMonthOfSimulation === 11) ? 12 : endMonthOfSimulation;
+        const ageInMonths = calculateAgeInMonths(buffalo, endYear, targetMonth);
 
         // Only count buffaloes born before or in the last year
         if (buffalo.birthYear <= endYear) {
@@ -381,7 +394,8 @@ export default function BuffaloFamilyTree() {
               if (buffalo.generation >= 1) {
                 const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
                 const ageInMonths = ((year - buffalo.birthYear) * 12) + (month - birthMonth);
-                if (ageInMonths < 36) {
+                const threshold = 34; // Standardized for all offspring
+                if (ageInMonths < threshold) {
                   isRevenueApplicable = false;
                 }
               }
@@ -393,7 +407,8 @@ export default function BuffaloFamilyTree() {
                   buffalo.acquisitionMonth,
                   year,
                   month,
-                  buffalo.absoluteAcquisitionMonth
+                  buffalo.absoluteAcquisitionMonth,
+                  buffalo.generation
                 );
                 if (monthlyRevenue > 0) {
                   annualRevenue += monthlyRevenue;
@@ -425,7 +440,7 @@ export default function BuffaloFamilyTree() {
               } else {
                 const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
                 const ageInMonths = ((year - buffalo.birthYear) * 12) + (month - birthMonth);
-                if (ageInMonths >= 36) {
+                if (ageInMonths >= 24) {
                   isCpfApplicable = true;
                 }
               }
@@ -502,7 +517,8 @@ export default function BuffaloFamilyTree() {
 
       herd.forEach(buffalo => {
         // 1. Age & Asset Value
-        const ageInMonths = calculateAgeInMonths(buffalo, endYear, endMonthOfSimulation);
+        const targetMonth = (endMonthOfSimulation === 11) ? 12 : endMonthOfSimulation;
+        const ageInMonths = calculateAgeInMonths(buffalo, endYear, targetMonth);
         buffalo.ageInMonths = ageInMonths;
         buffalo.ageDisplay = `${Math.floor(ageInMonths / 12)}y ${ageInMonths % 12}m`;
         buffalo.currentAssetValue = getBuffaloValueByAge(ageInMonths);
@@ -533,7 +549,7 @@ export default function BuffaloFamilyTree() {
             if (buffalo.generation > 0) {
               const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
               const ageAtMonth = ((y - buffalo.birthYear) * 12) + (m - birthMonth);
-              if (ageAtMonth < 36) isRevenueApplicable = false;
+              if (ageAtMonth < 34) isRevenueApplicable = false;
             }
 
             let monthlyRevenue = 0;
@@ -577,7 +593,7 @@ export default function BuffaloFamilyTree() {
             } else {
               const birthMonth = buffalo.birthMonth !== undefined ? buffalo.birthMonth : (buffalo.acquisitionMonth || 0);
               const ageInMonths = ((y - buffalo.birthYear) * 12) + (m - birthMonth);
-              if (ageInMonths >= 36) {
+              if (ageInMonths >= 24) {
                 isCpfApplicable = true;
               }
             }
@@ -591,6 +607,8 @@ export default function BuffaloFamilyTree() {
         buffalo.lifetimeCPF = lifetimeCPF;
         buffalo.lifetimeNet = lifetimeRevenue - lifetimeCPF;
       });
+
+
 
       setTreeData({
         units,
@@ -606,7 +624,7 @@ export default function BuffaloFamilyTree() {
           totalRevenue: totalRevenue,
           totalNetRevenue: totalNetRevenue,
           totalNetRevenueWithCaring: totalNetRevenue - totalCaringCost,
-          roi: (totalNetRevenue - totalCaringCost) + totalAssetValue,
+          roi: totalNetRevenue + totalAssetValue,
           totalAssetValue: totalAssetValue,
           duration: totalYears
         },
@@ -625,7 +643,8 @@ export default function BuffaloFamilyTree() {
         let lineageAssetValue = 0;
         lineageBuffaloes.forEach(buffalo => {
           if (buffalo.birthYear <= endYear) {
-            const ageInMonths = calculateAgeInMonths(buffalo, endYear, 11);
+            const targetMonth = (endMonthOfSimulation === 11) ? 12 : endMonthOfSimulation;
+            const ageInMonths = calculateAgeInMonths(buffalo, endYear, targetMonth);
             lineageAssetValue += getBuffaloValueByAge(ageInMonths);
           }
         });
@@ -811,6 +830,7 @@ export default function BuffaloFamilyTree() {
           handleResetView={handleResetView}
           zoom={zoom}
           loading={loading}
+          headerStats={headerStats}
         />
       )}
 
@@ -841,6 +861,7 @@ export default function BuffaloFamilyTree() {
               activeGraph={activeGraph}
               setActiveGraph={setActiveGraph}
               onBack={() => setActiveTab("familyTree")}
+              setHeaderStats={setHeaderStats}
             />
           </div>
         ) : (

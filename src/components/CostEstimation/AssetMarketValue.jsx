@@ -72,16 +72,13 @@ const AssetMarketValue = ({
   // Age-Based Valuation Breakdown function for selected year
   const calculateDetailedAssetValueForYear = (year) => {
     const ageGroups = {
-      '0-6 months (Calves)': { count: 0, value: 0, unitValue: 3000 },
-      '6-12 months': { count: 0, value: 0, unitValue: 6000 },
-      '12-18 months': { count: 0, value: 0, unitValue: 12000 },
-      '18-24 months': { count: 0, value: 0, unitValue: 25000 },
-      '24-30 months': { count: 0, value: 0, unitValue: 35000 },
-      '30-36 months': { count: 0, value: 0, unitValue: 50000 },
-      '36-40 months': { count: 0, value: 0, unitValue: 50000 },
-      '40-48 months': { count: 0, value: 0, unitValue: 100000 },
-      '48-60 months': { count: 0, value: 0, unitValue: 150000 },
-      '60+ months (Mother Buffalo)': { count: 0, value: 0, unitValue: 175000 }
+      '0-12 months': { count: 0, value: 0, unitValue: 10000 },
+      '13-18 months': { count: 0, value: 0, unitValue: 25000 },
+      '19-24 months': { count: 0, value: 0, unitValue: 40000 },
+      '25-34 months': { count: 0, value: 0, unitValue: 100000 },
+      '35-40 months': { count: 0, value: 0, unitValue: 150000 },
+      '41-48 months': { count: 0, value: 0, unitValue: 175000 },
+      '48+ months': { count: 0, value: 0, unitValue: 200000 }
     };
 
     let totalValue = 0;
@@ -90,42 +87,34 @@ const AssetMarketValue = ({
     Object.values(buffaloDetails).forEach(buffalo => {
       // Only count buffaloes born before or in the last year/month
       // Determine target month: December (11) for full years, or endMonth for the final year
-      const targetMonth = (year === endYear && endMonth !== undefined) ? endMonth : 11;
+      // Use 12 (January of next year equivalent) for full years to capture completed year valuation
+      const targetMonth = (year === endYear && endMonth !== undefined && endMonth !== 11) ? endMonth : 12;
 
       if (buffalo.birthYear < year || (buffalo.birthYear === year && (buffalo.birthMonth || 0) <= targetMonth)) {
         const ageInMonths = calculateAgeInMonths(buffalo, year, targetMonth);
         const value = getBuffaloValueByAge(ageInMonths);
 
-        if (ageInMonths >= 60) {
-          ageGroups['60+ months (Mother Buffalo)'].count++;
-          ageGroups['60+ months (Mother Buffalo)'].value += value;
-        } else if (ageInMonths >= 48) {
-          ageGroups['48-60 months'].count++;
-          ageGroups['48-60 months'].value += value;
-        } else if (ageInMonths >= 40) {
-          ageGroups['40-48 months'].count++;
-          ageGroups['40-48 months'].value += value;
-        } else if (ageInMonths >= 36) {
-          ageGroups['36-40 months'].count++;
-          ageGroups['36-40 months'].value += value;
-        } else if (ageInMonths >= 30) {
-          ageGroups['30-36 months'].count++;
-          ageGroups['30-36 months'].value += value;
-        } else if (ageInMonths >= 24) {
-          ageGroups['24-30 months'].count++;
-          ageGroups['24-30 months'].value += value;
-        } else if (ageInMonths >= 18) {
-          ageGroups['18-24 months'].count++;
-          ageGroups['18-24 months'].value += value;
-        } else if (ageInMonths >= 12) {
-          ageGroups['12-18 months'].count++;
-          ageGroups['12-18 months'].value += value;
-        } else if (ageInMonths >= 6) {
-          ageGroups['6-12 months'].count++;
-          ageGroups['6-12 months'].value += value;
+        if (ageInMonths >= 48) {
+          ageGroups['48+ months'].count++;
+          ageGroups['48+ months'].value += value;
+        } else if (ageInMonths >= 41) {
+          ageGroups['41-48 months'].count++;
+          ageGroups['41-48 months'].value += value;
+        } else if (ageInMonths >= 35) {
+          ageGroups['35-40 months'].count++;
+          ageGroups['35-40 months'].value += value;
+        } else if (ageInMonths >= 25) {
+          ageGroups['25-34 months'].count++;
+          ageGroups['25-34 months'].value += value;
+        } else if (ageInMonths >= 19) {
+          ageGroups['19-24 months'].count++;
+          ageGroups['19-24 months'].value += value;
+        } else if (ageInMonths >= 13) {
+          ageGroups['13-18 months'].count++;
+          ageGroups['13-18 months'].value += value;
         } else {
-          ageGroups['0-6 months (Calves)'].count++;
-          ageGroups['0-6 months (Calves)'].value += value;
+          ageGroups['0-12 months'].count++;
+          ageGroups['0-12 months'].value += value;
         }
 
         totalValue += value;
@@ -339,16 +328,13 @@ const AssetMarketValue = ({
               </thead>
               <tbody>
                 {[
-                  { category: '0-6 months (Calves)', unitValue: 3000 },
-                  { category: '6-12 months', unitValue: 6000 },
-                  { category: '12-18 months', unitValue: 12000 },
-                  { category: '18-24 months', unitValue: 25000 },
-                  { category: '24-30 months', unitValue: 35000 },
-                  { category: '30-36 months', unitValue: 50000 },
-                  { category: '36-40 months', unitValue: 50000 },
-                  { category: '40-48 months', unitValue: 100000 },
-                  { category: '48-60 months', unitValue: 150000 },
-                  { category: '60+ months (Mother Buffalo)', unitValue: 175000 }
+                  { category: '0-12 months', unitValue: 10000 },
+                  { category: '13-18 months', unitValue: 25000 },
+                  { category: '19-24 months', unitValue: 40000 },
+                  { category: '25-34 months', unitValue: 100000 },
+                  { category: '35-40 months', unitValue: 150000 },
+                  { category: '41-48 months', unitValue: 175000 },
+                  { category: '48+ months', unitValue: 200000 }
                 ].map((item, index) => {
                   const count = getCategoryCount(item.category, breakdownAssetData);
                   // console.log(count);
@@ -421,22 +407,19 @@ const AssetMarketValue = ({
                 <tr className="bg-gradient-to-r from-gray-50 to-blue-50">
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Year</th>
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Buffaloes</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">0-6 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">6-12 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">12-18 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">18-24 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">24-30 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">30-36 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">36-40 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">40-48 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">48-60 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">60+ months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">0-12 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">13-18 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">19-24 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">25-34 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">35-40 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">41-48 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">48+ months</th>
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Value</th>
                 </tr>
               </thead>
               <tbody>
 
-                {assetMarketValue.slice(0, 10).map((asset, yearIndex) => {
+                {assetMarketValue.map((asset, yearIndex) => {
                   // Calculate total buffaloes for this year
                   let yearTotalBuffaloes = 0;
                   if (asset.ageCategories) {
@@ -454,34 +437,25 @@ const AssetMarketValue = ({
                         {asset.totalBuffaloes}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
-                        {asset.ageCategories?.['0-6 months (Calves)']?.count || 0}
+                        {asset.ageCategories?.['0-12 months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
-                        {asset.ageCategories?.['6-12 months']?.count || 0}
+                        {asset.ageCategories?.['13-18 months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
-                        {asset.ageCategories?.['12-18 months']?.count || 0}
+                        {asset.ageCategories?.['19-24 months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
-                        {asset.ageCategories?.['18-24 months']?.count || 0}
+                        {asset.ageCategories?.['25-34 months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
-                        {asset.ageCategories?.['24-30 months']?.count || 0}
+                        {asset.ageCategories?.['35-40 months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
-                        {asset.ageCategories?.['30-36 months']?.count || 0}
-                      </td>
-                      <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
-                        {asset.ageCategories?.['36-40 months']?.count || 0}
-                      </td>
-                      <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
-                        {asset.ageCategories?.['40-48 months']?.count || 0}
-                      </td>
-                      <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
-                        {asset.ageCategories?.['48-60 months']?.count || 0}
+                        {asset.ageCategories?.['41-48 months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-red-600">
-                        {asset.ageCategories?.['60+ months (Mother Buffalo)']?.count || 0}
+                        {asset.ageCategories?.['48+ months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-semibold text-green-600">
                         {formatCurrency(asset.totalAssetValue || 0)}
@@ -493,7 +467,7 @@ const AssetMarketValue = ({
             </table>
           </div>
           <div className="mt-4 text-sm text-gray-500 text-center">
-            Shows the distribution of buffaloes across different age categories for each year (1-10)
+            Shows the distribution of buffaloes across different age categories for each year
           </div>
         </div>
 
@@ -539,7 +513,7 @@ const AssetMarketValue = ({
                 return `${total} buffaloes`;
               })()}
               <br />
-              {assetMarketValue[assetMarketValue.length - 1]?.ageCategories?.['60+ months (Mother Buffalo)']?.count || 0} mother buffaloes (60+ months)
+              {assetMarketValue[assetMarketValue.length - 1]?.motherBuffaloes || 0} mother buffaloes (60+ months)
               <br />
               Multiple generations with age-based valuation
             </div>
@@ -722,16 +696,13 @@ const AssetMarketValue = ({
           <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Age-Based Price Schedule</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[
-              { age: '0-6 months', price: '₹3,000', color: 'from-blue-50 to-blue-100', desc: 'New born' },
-              { age: '6-12 months', price: '₹6,000', color: 'from-blue-100 to-blue-200', desc: 'Growing' },
-              { age: '12-18 months', price: '₹12,000', color: 'from-teal-50 to-teal-100', desc: 'Growing' },
-              { age: '18-24 months', price: '₹25,000', color: 'from-teal-100 to-teal-200', desc: 'Growing' },
-              { age: '24-30 months', price: '₹35,000', color: 'from-emerald-50 to-emerald-100', desc: 'Growing' },
-              { age: '30-36 months', price: '₹50,000', color: 'from-emerald-100 to-emerald-200', desc: 'Growing' },
-              { age: '36-40 months', price: '₹50,000', color: 'from-amber-50 to-amber-100', desc: 'Transition' },
-              { age: '40-48 months', price: '₹1,00,000', color: 'from-amber-100 to-amber-200', desc: '4+ years' },
-              { age: '48-60 months', price: '₹1,50,000', color: 'from-orange-50 to-orange-100', desc: '5th year' },
-              { age: '60+ months', price: '₹1,75,000', color: 'from-red-50 to-red-100', desc: 'Mother buffalo' }
+              { age: '0-12 months', price: '₹10,000', color: 'from-blue-50 to-blue-100', desc: 'Calf' },
+              { age: '13-18 months', price: '₹25,000', color: 'from-blue-100 to-blue-200', desc: 'Growing' },
+              { age: '19-24 months', price: '₹40,000', color: 'from-teal-50 to-teal-100', desc: 'Heifer' },
+              { age: '25-34 months', price: '₹1,00,000', color: 'from-teal-100 to-teal-200', desc: 'Mature' },
+              { age: '35-40 months', price: '₹1,50,000', color: 'from-emerald-50 to-emerald-100', desc: 'Prime' },
+              { age: '41-48 months', price: '₹1,75,000', color: 'from-emerald-100 to-emerald-200', desc: 'Peak' },
+              { age: '48+ months', price: '₹2,00,000', color: 'from-amber-50 to-amber-100', desc: 'Proven' }
             ].map((item, index) => (
               <div
                 key={index}
