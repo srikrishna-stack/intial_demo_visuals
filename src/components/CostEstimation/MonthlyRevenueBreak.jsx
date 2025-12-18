@@ -386,9 +386,9 @@ const MonthlyRevenueBreak = ({
                   const netRevenue = unitTotal - monthlyCpfValue;
 
                   return (
-                    <>
+                    <React.Fragment key={monthIndex}>
                       {/* Month Row */}
-                      <tr key={monthIndex} className={`hover:bg-slate-50 transition-colors ${monthIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+                      <tr className={`hover:bg-slate-50 transition-colors ${monthIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
                         <td className="py-4 px-4 text-center font-semibold text-slate-900 text-base border-r border-slate-300 border-b border-slate-200 bg-slate-100">
                           {month}
                         </td>
@@ -465,7 +465,7 @@ const MonthlyRevenueBreak = ({
                           <td colSpan={unitBuffaloes.length + 4} className="h-px bg-slate-300"></td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   );
                 })}
 

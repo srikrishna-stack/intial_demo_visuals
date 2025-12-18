@@ -6,6 +6,7 @@ import AssetMarketValue from './AssetMarketValue';
 import HerdPerformance from './HerdPerformance';
 import AnnualHerdRevenue from './AnnualHerdRevenue';
 import BreakEvenTimeline from './BreakEvenTimeline';
+import CattleGrowingFund from './CattleGrowingFund';
 import { formatCurrency, formatNumber } from '../BuffaloFamilyTree/CommonComponents';
 
 const CostEstimationTable = ({
@@ -59,9 +60,9 @@ const CostEstimationTable = ({
 
       buffaloDetails[buffalo.id] = {
         id: buffalo.id,
+        name: buffalo.name || buffalo.id, // Pass name, fallback to ID
         originalId: buffalo.id,
         generation: buffalo.generation,
-        unit: buffalo.unit,
         unit: buffalo.unit,
         acquisitionMonth: buffalo.acquisitionMonth,
         absoluteAcquisitionMonth: buffalo.absoluteAcquisitionMonth, // Pass this down
@@ -771,6 +772,15 @@ const CostEstimationTable = ({
             >
               Break Even Timeline
             </button>
+            <button
+              onClick={() => setActiveTab("Cattle Growing Fund")}
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${activeTab === "Cattle Growing Fund"
+                ? 'bg-green-500 text-black shadow-lg transform scale-105'
+                : 'bg-black text-white hover:bg-gray-800'
+                }`}
+            >
+              Cattle Growing Fund
+            </button>
           </div>
 
 
@@ -798,11 +808,23 @@ const CostEstimationTable = ({
                 setCpfToggle={setCpfToggle}
                 monthNames={monthNames}
                 formatCurrency={formatCurrency}
-                startYear={startYear}
-                endYear={endYear}
-                yearRange={yearRange}
               />
             )}
+
+            {activeTab === "Cattle Growing Fund" && (
+              <CattleGrowingFund
+                treeData={treeData}
+                buffaloDetails={buffaloDetails}
+                yearlyCPFCost={yearlyCPFCost}
+                monthlyRevenue={monthlyRevenue}
+                yearlyData={yearlyData}
+                formatCurrency={formatCurrency}
+                startYear={startYear}
+                endYear={treeData.startYear + Math.floor((treeData.startMonth + (treeData.years * 12) - 1) / 12)}
+                endMonth={(treeData.startMonth + (treeData.years * 12) - 1) % 12}
+              />
+            )}
+
 
             {activeTab === "Revenue Break Even" && (
               <RevenueBreakEven
