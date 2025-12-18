@@ -1,5 +1,5 @@
-import React from 'react';
-import { Play, RotateCcw, Calendar, Loader2 } from "lucide-react";
+import React, { useState } from 'react';
+import { Play, RotateCcw, Calendar, Loader2, ToggleLeft, ToggleRight } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { formatCurrency } from './CommonComponents';
@@ -28,6 +28,8 @@ const HeaderControls = ({
 
   // Generate days array based on days in month
   const dayOptions = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const [isCGFEnabled, setIsCGFEnabled] = useState(false);
 
   // Handle number input changes to prevent showing 0 when empty
   const handleNumberChange = (value, setter) => {
@@ -134,26 +136,59 @@ const HeaderControls = ({
                 <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Buffaloes</span>
                 <span className="text-sm font-bold text-gray-800">{treeData.summaryStats.totalBuffaloes}</span>
               </div>
+
+              {/* Toggle Button for CGF */}
+              <div className="flex flex-col items-center justify-center min-w-[80px]">
+                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1">CGF Included</span>
+                <button
+                  onClick={() => setIsCGFEnabled(!isCGFEnabled)}
+                  className={`relative w-16 h-8 rounded-full p-1 cursor-pointer transition-all duration-500 shadow-inner ${isCGFEnabled
+                      ? 'bg-gray-800'
+                      : 'bg-gray-200'
+                    }`}
+                  title={isCGFEnabled ? "Disable CGF" : "Enable CGF"}
+                >
+                  {/* Track Text */}
+                  <span className={`absolute top-1/2 -translate-y-1/2 text-[10px] font-bold transition-all duration-300 ${isCGFEnabled ? 'left-2 text-white/50' : 'right-2 text-gray-400'
+                    }`}>
+                    {isCGFEnabled ? 'ON' : 'OFF'}
+                  </span>
+
+                  {/* Knob */}
+                  <div
+                    className={`relative w-6 h-6 rounded-full shadow-md transform transition-all duration-500 flex items-center justify-center ${isCGFEnabled
+                        ? 'translate-x-8 bg-gradient-to-tr from-emerald-400 to-teal-500 ring-2 ring-emerald-500/50'
+                        : 'translate-x-0 bg-gradient-to-br from-gray-100 to-white ring-1 ring-gray-300'
+                      }`}
+                  >
+                    {/* Knob Icon/Indicator */}
+                    <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${isCGFEnabled ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'bg-gray-300'
+                      }`} />
+                  </div>
+                </button>
+              </div>
+
               <div className="flex flex-col min-w-[80px]">
-                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Cumulative Net</span>
-                <span className="text-sm font-bold text-green-600">
-                  {formatCurrency(treeData.summaryStats.totalNetRevenue)}
+                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">
+                  {isCGFEnabled ? "Cumulative Net (with CGF)" : "Cumulative Net"}
+                </span>
+                <span className={`text-sm font-bold ${isCGFEnabled ? 'text-emerald-600' : 'text-green-600'}`}>
+                  {formatCurrency(isCGFEnabled ? treeData.summaryStats.totalNetRevenueWithCaring : treeData.summaryStats.totalNetRevenue)}
                 </span>
               </div>
-              <div className="flex flex-col min-w-[80px]">
-                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Cumulative Net(with CGF)
-                </span>
-                <span className="text-sm font-bold text-emerald-600">
-                  {formatCurrency(treeData.summaryStats.totalNetRevenueWithCaring)}
-                </span>
-              </div>
+
               <div className="flex flex-col min-w-[80px]">
                 <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Asset Value</span>
                 <span className="text-sm font-bold text-blue-600">{formatCurrency(treeData.summaryStats.totalAssetValue)}</span>
               </div>
               <div className="flex flex-col min-w-[80px]">
                 <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">ROI (Net + Assets)</span>
-                <span className="text-sm font-bold text-indigo-700">{formatCurrency(treeData.summaryStats.roi)}</span>
+                <span className="text-sm font-bold text-indigo-700">
+                  {formatCurrency(
+                    (isCGFEnabled ? treeData.summaryStats.totalNetRevenueWithCaring : treeData.summaryStats.totalNetRevenue) +
+                    treeData.summaryStats.totalAssetValue
+                  )}
+                </span>
               </div>
 
             </div>

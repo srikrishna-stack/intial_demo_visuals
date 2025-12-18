@@ -53,7 +53,7 @@ const BreakEvenTimeline = ({
               <div className="text-xs text-gray-300">Projection Settings</div>
             </div>
 
-            <div className="grid grid-cols-4 gap-3 text-center ">
+            <div className="grid grid-cols-3 gap-3 text-center ">
               <div className="bg-gray-700 rounded-lg p-3 py-7 border border-gray-600 ">
                 <div className="text-xs font-medium text-gray-300 mb-1">Start Date</div>
                 <div className="text-sm font-bold text-emerald-300">
@@ -73,10 +73,6 @@ const BreakEvenTimeline = ({
                 <div className="text-sm font-bold text-indigo-300">{treeData.units}</div>
               </div>
 
-              <div className="bg-gray-700 rounded-lg p-3 py-7 border border-gray-600">
-                <div className="text-xs font-medium text-gray-300 mb-1">Projection Period</div>
-                <div className="text-sm font-bold text-violet-300">{yearRange}</div>
-              </div>
             </div>
           </div>
         </div>
