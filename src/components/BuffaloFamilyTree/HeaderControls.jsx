@@ -139,10 +139,10 @@ const HeaderControls = ({
 
               {/* Toggle Button for CGF */}
               <div className="flex flex-col items-center justify-center min-w-[80px]">
-                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1">CGF Included</span>
+                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide ">CGF Included</span>
                 <button
                   onClick={() => setIsCGFEnabled(!isCGFEnabled)}
-                  className={`relative w-16 h-8 rounded-full p-1 cursor-pointer transition-all duration-500 shadow-inner ${isCGFEnabled
+                  className={`relative w-14 h-6 rounded-full p-1 cursor-pointer transition-all duration-500 shadow-inner ${isCGFEnabled
                       ? 'bg-gray-800'
                       : 'bg-gray-200'
                     }`}
@@ -156,8 +156,8 @@ const HeaderControls = ({
 
                   {/* Knob */}
                   <div
-                    className={`relative w-6 h-6 rounded-full shadow-md transform transition-all duration-500 flex items-center justify-center ${isCGFEnabled
-                        ? 'translate-x-8 bg-gradient-to-tr from-emerald-400 to-teal-500 ring-2 ring-emerald-500/50'
+                    className={`relative w-5 h-4 rounded-full shadow-md transform transition-all duration-500 flex items-center justify-center ${isCGFEnabled
+                        ? 'translate-x-6 bg-gradient-to-tr from-emerald-400 to-teal-500 ring-2 ring-emerald-500/50'
                         : 'translate-x-0 bg-gradient-to-br from-gray-100 to-white ring-1 ring-gray-300'
                       }`}
                   >
