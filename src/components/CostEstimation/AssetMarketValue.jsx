@@ -78,7 +78,7 @@ const AssetMarketValue = ({
       '25-34 months': { count: 0, value: 0, unitValue: 100000 },
       '35-40 months': { count: 0, value: 0, unitValue: 150000 },
       '41-48 months': { count: 0, value: 0, unitValue: 175000 },
-      '48+ months': { count: 0, value: 0, unitValue: 200000 }
+      '49+ months': { count: 0, value: 0, unitValue: 200000 }
     };
 
     let totalValue = 0;
@@ -94,9 +94,9 @@ const AssetMarketValue = ({
         const ageInMonths = calculateAgeInMonths(buffalo, year, targetMonth);
         const value = getBuffaloValueByAge(ageInMonths);
 
-        if (ageInMonths >= 48) {
-          ageGroups['48+ months'].count++;
-          ageGroups['48+ months'].value += value;
+        if (ageInMonths >= 49) {
+          ageGroups['49+ months'].count++;
+          ageGroups['49+ months'].value += value;
         } else if (ageInMonths >= 41) {
           ageGroups['41-48 months'].count++;
           ageGroups['41-48 months'].value += value;
@@ -334,7 +334,7 @@ const AssetMarketValue = ({
                   { category: '25-34 months', unitValue: 100000 },
                   { category: '35-40 months', unitValue: 150000 },
                   { category: '41-48 months', unitValue: 175000 },
-                  { category: '48+ months', unitValue: 200000 }
+                  { category: '49+ months', unitValue: 200000 }
                 ].map((item, index) => {
                   const count = getCategoryCount(item.category, breakdownAssetData);
                   // console.log(count);
@@ -413,7 +413,7 @@ const AssetMarketValue = ({
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">25-34 months</th>
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">35-40 months</th>
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">41-48 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">48+ months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">49+ months</th>
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Value</th>
                 </tr>
               </thead>
@@ -455,7 +455,7 @@ const AssetMarketValue = ({
                         {asset.ageCategories?.['41-48 months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-medium text-red-600">
-                        {asset.ageCategories?.['48+ months']?.count || 0}
+                        {asset.ageCategories?.['49+ months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-semibold text-green-600">
                         {formatCurrency(asset.totalAssetValue || 0)}
@@ -533,7 +533,7 @@ const AssetMarketValue = ({
               { age: '25-34 months', price: '₹1,00,000', color: 'from-teal-100 to-teal-200', desc: 'Mature' },
               { age: '35-40 months', price: '₹1,50,000', color: 'from-emerald-50 to-emerald-100', desc: 'Prime' },
               { age: '41-48 months', price: '₹1,75,000', color: 'from-emerald-100 to-emerald-200', desc: 'Peak' },
-              { age: '48+ months', price: '₹2,00,000', color: 'from-amber-50 to-amber-100', desc: 'Proven' }
+              { age: '49+ months', price: '₹2,00,000', color: 'from-amber-50 to-amber-100', desc: 'Proven' }
             ].map((item, index) => (
               <div
                 key={index}

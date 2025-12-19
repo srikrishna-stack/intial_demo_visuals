@@ -48,7 +48,7 @@ export const calculateAgeInMonths = (buffalo, targetYear, targetMonth = 0) => {
 // Get Buffalo Value by Age
 // Get Buffalo Value by Age
 export const getBuffaloValueByAge = (ageInMonths) => {
-  if (ageInMonths >= 48) {
+  if (ageInMonths >= 49) {
     return 200000;
   } else if (ageInMonths >= 41) {
     return 175000;

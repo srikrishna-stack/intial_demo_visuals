@@ -256,7 +256,7 @@ const CostEstimationTable = ({
   const cumulativeYearlyData = calculateCumulativeRevenueData();
 
   const getBuffaloValueByAge = (ageInMonths) => {
-    if (ageInMonths >= 48) {
+    if (ageInMonths >= 49) {
       return 200000;
     } else if (ageInMonths >= 41) {
       return 175000;
@@ -274,8 +274,8 @@ const CostEstimationTable = ({
   };
 
   const getBuffaloValueDescription = (ageInMonths) => {
-    if (ageInMonths > 48) {
-      return "48+ months (Proven - ₹2,00,000)";
+    if (ageInMonths >= 49) {
+      return "49+ months (Proven - ₹2,00,000)";
     } else if (ageInMonths >= 41) {
       return "41-48 months (Peak - ₹1,75,000)";
     } else if (ageInMonths >= 35) {
@@ -577,7 +577,7 @@ const CostEstimationTable = ({
         '25-34 months': { count: 0, value: 0 },
         '35-40 months': { count: 0, value: 0 },
         '41-48 months': { count: 0, value: 0 },
-        '48+ months': { count: 0, value: 0 }
+        '49+ months': { count: 0, value: 0 }
       };
 
       Object.values(buffaloDetails).forEach(buffalo => {
@@ -587,9 +587,9 @@ const CostEstimationTable = ({
           const value = getBuffaloValueByAge(ageInMonths);
           totalAssetValue += value;
 
-          if (ageInMonths >= 48) {
-            ageCategories['48+ months'].count++;
-            ageCategories['48+ months'].value += value;
+          if (ageInMonths >= 49) {
+            ageCategories['49+ months'].count++;
+            ageCategories['49+ months'].value += value;
           } else if (ageInMonths >= 41) {
             ageCategories['41-48 months'].count++;
             ageCategories['41-48 months'].value += value;
@@ -619,7 +619,7 @@ const CostEstimationTable = ({
         totalBuffaloes: yearData?.totalBuffaloes || 0,
         ageCategories: ageCategories,
         totalAssetValue: totalAssetValue,
-        motherBuffaloes: ageCategories['48+ months'].count
+        motherBuffaloes: ageCategories['49+ months'].count
       });
     }
 
@@ -636,7 +636,7 @@ const CostEstimationTable = ({
       '25-34 months': { count: 0, value: 0, unitValue: 100000 },
       '35-40 months': { count: 0, value: 0, unitValue: 150000 },
       '41-48 months': { count: 0, value: 0, unitValue: 175000 },
-      '48+ months': { count: 0, value: 0, unitValue: 200000 }
+      '49+ months': { count: 0, value: 0, unitValue: 200000 }
     };
 
     let totalValue = 0;
@@ -647,9 +647,9 @@ const CostEstimationTable = ({
         const ageInMonths = calculateAgeInMonths(buffalo, year, 11);
         const value = getBuffaloValueByAge(ageInMonths);
 
-        if (ageInMonths > 48) {
-          ageGroups['48+ months'].count++;
-          ageGroups['48+ months'].value += value;
+        if (ageInMonths >= 49) {
+          ageGroups['49+ months'].count++;
+          ageGroups['49+ months'].value += value;
         } else if (ageInMonths >= 41) {
           ageGroups['41-48 months'].count++;
           ageGroups['41-48 months'].value += value;
