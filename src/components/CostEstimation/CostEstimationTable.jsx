@@ -7,6 +7,7 @@ import HerdPerformance from './HerdPerformance';
 import AnnualHerdRevenue from './AnnualHerdRevenue';
 import BreakEvenTimeline from './BreakEvenTimeline';
 import CattleGrowingFund from './CattleGrowingFund';
+import CpfCgfCombined from './CpfCgfCombined';
 import { formatCurrency, formatNumber } from '../BuffaloFamilyTree/CommonComponents';
 
 const CostEstimationTable = ({
@@ -781,6 +782,15 @@ const CostEstimationTable = ({
             >
               Cattle Growing Fund
             </button>
+            <button
+              onClick={() => setActiveTab("CPF + CGF")}
+              className={`font-bold rounded-xl p-3 text-sm transition-all duration-300 ${activeTab === "CPF + CGF"
+                ? 'bg-green-500 text-black shadow-lg transform scale-105'
+                : 'bg-black text-white hover:bg-gray-800'
+                }`}
+            >
+              CPF + CGF
+            </button>
           </div>
 
 
@@ -819,6 +829,19 @@ const CostEstimationTable = ({
                 monthlyRevenue={monthlyRevenue}
                 yearlyData={yearlyData}
                 formatCurrency={formatCurrency}
+                startYear={startYear}
+                endYear={treeData.startYear + Math.floor((treeData.startMonth + (treeData.years * 12) - 1) / 12)}
+                endMonth={(treeData.startMonth + (treeData.years * 12) - 1) % 12}
+              />
+            )}
+
+            {activeTab === "CPF + CGF" && (
+              <CpfCgfCombined
+                treeData={treeData}
+                buffaloDetails={buffaloDetails}
+                formatCurrency={formatCurrency}
+                calculateAgeInMonths={calculateAgeInMonths}
+                monthNames={monthNames}
                 startYear={startYear}
                 endYear={treeData.startYear + Math.floor((treeData.startMonth + (treeData.years * 12) - 1) / 12)}
                 endMonth={(treeData.startMonth + (treeData.years * 12) - 1) % 12}
