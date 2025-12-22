@@ -374,7 +374,7 @@ export default function BuffaloFamilyTree() {
 
       // --- Calculate Total Financials (Revenue & Net) Matching CostEstimationTable logic ---
       const calculateTotalFinancials = () => {
-        const CPF_PER_MONTH = 13000 / 12;
+        const CPF_PER_MONTH = 15000 / 12;
         let totalRevenue = 0;
         let totalCPFCost = 0;
         let totalCaringCost = 0;
@@ -487,7 +487,7 @@ export default function BuffaloFamilyTree() {
       const { totalRevenue, totalNetRevenue, totalCaringCost } = calculateTotalFinancials();
 
       // --- Calculate Per-Buffalo Stats for Tooltip ---
-      const CPF_PER_MONTH = 13000 / 12; // Define CPF constant
+      const CPF_PER_MONTH = 15000 / 12; // Define CPF constant
 
       herd.forEach(buffalo => {
         // 1. Age & Asset Value

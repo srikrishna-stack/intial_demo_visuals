@@ -95,7 +95,7 @@ const MonthlyRevenueBreak = ({
   const calculateCPFCost = () => {
     let monthlyCosts = new Array(12).fill(0);
     const buffaloCPFDetails = [];
-    const CPF_PER_MONTH = 13000 / 12;
+    const CPF_PER_MONTH = 15000 / 12;
     // We check ALL buffaloes in unit, not just the filtered "unitBuffaloes" (which overlaps mostly but just to be safe)
     // Actually typically we want to show CPF details for buffaloes visibly contributing or costing money.
     // Let's iterate all buffaloes in the unit to catch any hidden costs? 
@@ -158,7 +158,7 @@ const MonthlyRevenueBreak = ({
   // Calculate CPF cumulative cost until selected year precisely
   const calculateCumulativeCPFCost = () => {
     let totalCPF = 0;
-    const CPF_PER_MONTH = 13000 / 12;
+    const CPF_PER_MONTH = 15000 / 12;
 
     for (let year = treeData.startYear; year <= selectedYear; year++) {
       const allUnitBuffaloes = Object.values(buffaloDetails).filter(b => b.unit === selectedUnit);
@@ -322,7 +322,7 @@ const MonthlyRevenueBreak = ({
                 <div className="text-xs text-amber-600 font-medium bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
                   B CPF: {selectedYear === treeData.startYear ? `Free (1st Year)` :
                     selectedYear === treeData.startYear + 1 ? `Half year CPF (1st Year End)` :
-                      selectedYear > treeData.startYear + 1 ? 'Full CPF (₹13,000)' : 'No CPF'}
+                      selectedYear > treeData.startYear + 1 ? 'Full CPF (₹15,000)' : 'No CPF'}
                 </div>
               </div>
             </div>
@@ -407,7 +407,7 @@ const MonthlyRevenueBreak = ({
                           };
 
                           const isCpfApplicable = isCpfApplicableForMonth(buffalo, selectedYear, monthIndex);
-                          const cpfAmount = 13000 / 12;
+                          const cpfAmount = 15000 / 12;
 
                           return (
                             <td
@@ -635,7 +635,7 @@ const MonthlyRevenueBreak = ({
       {/* Dynamic Calculation Note */}
       <div className="mt-8 text-center text-sm text-slate-500">
         Note: B gets one year free CPF from import date (1st year of presence).
-        CPF calculation: ₹13,000 per buffalo per year (calculated monthly).
+        CPF calculation: ₹15,000 per buffalo per year (calculated monthly).
       </div>
 
     </div>

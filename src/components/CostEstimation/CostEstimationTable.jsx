@@ -133,7 +133,7 @@ const CostEstimationTable = ({
     const buffaloDetails = getBuffaloDetails();
     const cpfCostByYear = {};
 
-    const CPF_PER_MONTH = 13000 / 12;
+    const CPF_PER_MONTH = 15000 / 12;
 
     for (let year = treeData.startYear; year <= treeData.startYear + treeData.years; year++) {
       let totalCPFCost = 0;
@@ -293,7 +293,7 @@ const CostEstimationTable = ({
   };
 
   const MOTHER_BUFFALO_PRICE = 175000;
-  const CPF_PER_UNIT = 13000;
+  const CPF_PER_UNIT = 15000;
 
   const calculateInitialInvestment = () => {
     const motherBuffaloCost = treeData.units * 2 * MOTHER_BUFFALO_PRICE;

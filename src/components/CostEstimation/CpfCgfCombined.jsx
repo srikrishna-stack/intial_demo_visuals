@@ -81,7 +81,7 @@ const CpfCgfCombined = ({
     };
 
     const calculateCpfForMonth = (year, month) => {
-        const CPF_PER_MONTH = 13000 / 12;
+        const CPF_PER_MONTH = 15000 / 12;
         let totalCost = 0;
 
         Object.values(buffaloDetails).forEach(buffalo => {
