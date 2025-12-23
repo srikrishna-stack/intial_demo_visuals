@@ -411,9 +411,9 @@ const AssetMarketValue = ({
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">13-18 months</th>
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">19-24 months</th>
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">25-34 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">35-40 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">41-48 months</th>
-                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">49+ months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b bg-orange-50">35-40 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b bg-orange-50">41-48 months</th>
+                  <th className="px-6 py-4 text-left font-bold text-gray-700 border-b bg-orange-50">49+ months</th>
                   <th className="px-6 py-4 text-left font-bold text-gray-700 border-b">Total Value</th>
                 </tr>
               </thead>
@@ -448,13 +448,13 @@ const AssetMarketValue = ({
                       <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
                         {asset.ageCategories?.['25-34 months']?.count || 0}
                       </td>
-                      <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
+                      <td className="px-6 py-4 border-b text-center font-medium text-blue-600 bg-orange-50">
                         {asset.ageCategories?.['35-40 months']?.count || 0}
                       </td>
-                      <td className="px-6 py-4 border-b text-center font-medium text-blue-600">
+                      <td className="px-6 py-4 border-b text-center font-medium text-blue-600 bg-orange-50">
                         {asset.ageCategories?.['41-48 months']?.count || 0}
                       </td>
-                      <td className="px-6 py-4 border-b text-center font-medium text-red-600">
+                      <td className="px-6 py-4 border-b text-center font-medium text-red-600 bg-orange-50">
                         {asset.ageCategories?.['49+ months']?.count || 0}
                       </td>
                       <td className="px-6 py-4 border-b text-center font-semibold text-green-600">

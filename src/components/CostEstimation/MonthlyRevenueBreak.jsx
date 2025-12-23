@@ -291,7 +291,7 @@ const MonthlyRevenueBreak = ({
                 <div className="text-sm font-bold text-emerald-700">
                   {formatCurrency(cumulativeNetRevenue)}
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xl text-slate-500">
                   Gross: <span className="font-semibold text-blue-600">{formatCurrency(totalCumulativeUntilYear)}</span>
                 </div>
               </div>
@@ -328,17 +328,10 @@ const MonthlyRevenueBreak = ({
             </div>
 
             {/* Right: Download Button */}
-            <div className="flex flex-col items-end gap-2 w-full lg:w-48">
-              <button
-                onClick={downloadExcel}
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-1.5 px-3 rounded-lg shadow hover:shadow-md hover:scale-105 transition-all text-xs flex items-center justify-center gap-2 w-full"
-                title="Download Excel"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                <span className="font-semibold">Download Excel</span>
-              </button>
+
+            {/* Right: Spacer to balance the layout and keep the center content centered */}
+            <div className="hidden xl:flex flex-col items-end gap-2 w-full lg:w-48">
+              {/* Spacer */}
             </div>
 
           </div>
